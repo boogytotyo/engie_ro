@@ -22,12 +22,5 @@
     "abort": {
       "already_configured": "This account is already configured."
     }
-  },
-  "entity": {
-    "update": {
-      "engie_romania_update": {
-        "name": "Engie România update"
-      }
-    }
   }
 }
