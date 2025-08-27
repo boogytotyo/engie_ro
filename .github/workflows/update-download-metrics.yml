@@ -1,13 +1,20 @@
 name: Update Download Metrics
 
 on:
+  # rulează AUTOMAT după ce se finalizează workflow-ul de build/upload ZIP
   workflow_run:
-    workflows: ["Build & Upload HACS ZIP"]
+    workflows: ["Build & Upload HACS ZIP"]   # ← schimbă numele dacă ai alt workflow de build
     types: [completed]
+
+  # fallback: rulează și la publicarea unui release
   release:
     types: [published]
+
+  # rulează zilnic (prinde descărcări noi apărute ulterior)
   schedule:
     - cron: "20 0 * * *"
+
+  # rulează manual din tabul Actions
   workflow_dispatch:
 
 permissions:
@@ -20,13 +27,14 @@ concurrency:
 
 jobs:
   metrics:
+    # dacă a pornit din workflow_run, rulează doar dacă build-ul a reușit
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: main                # <- schimbă dacă ai alt branch implicit
+          ref: main                # ← schimbă dacă default branch-ul tău nu e "main"
           persist-credentials: true
 
       - name: Generate metrics (totals, latest, top5)
@@ -38,12 +46,16 @@ jobs:
             const path = require('path');
             const repo = context.repo;
 
+            // 1) Preia toate release-urile (paginat)
             let releases = await github.paginate(
               github.rest.repos.listReleases,
               { owner: repo.owner, repo: repo.repo, per_page: 100 }
             );
+
+            // ignoră drafts; păstrează prerelease (modifică aici dacă vrei)
             releases = releases.filter(r => !r.draft);
 
+            // 2) Calculează totaluri & structuri
             let totalAll = 0;
             const perRelease = [];
             const perAsset = [];
@@ -76,15 +88,20 @@ jobs:
               }
             }
 
+            // Top 5 versiuni după downloads & latest după data publicării
+            const top5 = [...perRelease].sort((a,b) => b.downloads - a.downloads).slice(0,5);
+            const latest = [...perRelease].sort(
+              (a,b) => new Date(b.published_at) - new Date(a.published_at)
+            )[0] || null;
+
+            // 3) Scrie fișierele în /metrics
             const now = new Date().toISOString();
             const metricsDir = path.join(process.cwd(), 'metrics');
             const shieldsDir = path.join(metricsDir, 'shields');
             if (!fs.existsSync(metricsDir)) fs.mkdirSync(metricsDir, { recursive: true });
             if (!fs.existsSync(shieldsDir)) fs.mkdirSync(shieldsDir, { recursive: true });
 
-            const top5 = [...perRelease].sort((a,b) => b.downloads - a.downloads).slice(0,5);
-            const latest = [...perRelease].sort((a,b) => new Date(b.published_at) - new Date(a.published_at))[0] || null;
-
+            // 3a) Snapshot curent detaliat
             fs.writeFileSync(
               path.join(metricsDir, 'downloads.json'),
               JSON.stringify({
@@ -96,32 +113,48 @@ jobs:
               }, null, 2)
             );
 
+            // 3b) Istoric (append JSONL)
             fs.appendFileSync(
               path.join(metricsDir, 'downloads.history.jsonl'),
               JSON.stringify({ timestamp: now, total_downloads: totalAll, per_release: perRelease }) + '\n'
             );
 
+            // 3c) Top 5 (JSON + Markdown)
             fs.writeFileSync(
               path.join(metricsDir, 'top_versions.json'),
               JSON.stringify({ generated_at: now, top: top5 }, null, 2)
             );
-
             const rows = top5.map((r, i) =>
               `| ${i+1} | ${r.tag} | ${r.downloads} | ${r.published_at ? r.published_at.split('T')[0] : ''} |`
             ).join('\n');
-            fs.writeFileSync(path.join(metricsDir, 'TOP.md'),
-              `# Top 5 Versiuni după Downloads\n\nUltima generare: ${now}\n\n| # | Versiune | Downloads | Publicat |\n| - | - | -: | - |\n${rows}\n`
+            fs.writeFileSync(
+              path.join(metricsDir, 'TOP.md'),
+              `# Top 5 Versiuni după Downloads\n\nUltima generare: ${now}\n\n` +
+              `| # | Versiune | Downloads | Publicat |\n| - | - | -: | - |\n${rows}\n`
             );
 
+            // 3d) Shields: total downloads
             const totalPretty = new Intl.NumberFormat('en-US').format(totalAll);
             fs.writeFileSync(
               path.join(shieldsDir, 'downloads.json'),
-              JSON.stringify({ schemaVersion: 1, label: "downloads (assets)", message: totalPretty, color: "blue" })
+              JSON.stringify({
+                schemaVersion: 1,
+                label: "downloads (assets)",
+                message: totalPretty,
+                color: "blue"
+              })
             );
+
+            // 3e) Shields: latest release downloads
             const latestCount = latest ? latest.downloads : 0;
             fs.writeFileSync(
               path.join(shieldsDir, 'latest_release.json'),
-              JSON.stringify({ schemaVersion: 1, label: "latest release downloads", message: String(latestCount), color: "informational" })
+              JSON.stringify({
+                schemaVersion: 1,
+                label: "latest release downloads",
+                message: String(latestCount),
+                color: "informational"
+              })
             );
 
       - name: Commit metrics
