@@ -13,7 +13,7 @@ Nu este un serviciu cloud și **nu trimite** date către terți, în afară de e
 
 ## Jurnale (logs)
 - Jurnalele sunt scrise local de Home Assistant și pot include detalii de eroare (coduri HTTP, mesaje).  
-- Poți activa/dezactiva logarea de tip debug în orice moment (vezi `TROUBLESHOOTING.md`).
+- Poți activa/dezactiva logarea de tip debug în orice moment (vezi `FAQ.md`).
 
 ## Păstrarea și ștergerea datelor
 - Toate datele rămân pe sistemul tău Home Assistant.  
