@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "Tag (ex: 2.0.2 sau v2.0.2). Dacă lipsește, se folosește ramura/eticheta curentă."
+        description: "Tag (ex: 2.0.2 sau v2.0.2). Daca lipseste, se foloseste ramura/eticheta curenta."
         required: false
 
 permissions:
@@ -87,7 +87,7 @@ jobs:
           echo "SHA256:"
           cat "${NAME}.sha256"
 
-      # Upload când evenimentul este 'release' (există deja pagina de release)
+      # Upload la 'release' event (exista deja pagina de release)
       - name: Upload assets to current Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
