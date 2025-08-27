@@ -59,7 +59,18 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
                 return unpaid
         if self._sid == "engie_index_curent":
             info = data.get("index_info") or {}
-            return info.get("last_index")
+            try:
+                from datetime import datetime as _dt
+                today = _dt.now().date()
+                sd = info.get("start_date")
+                ed = info.get("end_date")
+                if sd and ed:
+                    sd_d = _dt.strptime(sd, "%Y-%m-%d").date()
+                    ed_d = _dt.strptime(ed, "%Y-%m-%d").date()
+                    return "Da" if sd_d <= today <= ed_d else "Nu"
+            except Exception:
+                pass
+            return "Nu"
         if self._sid == "engie_istoric_index":
                 # Return latest index value from history
                 data = self.coordinator.data or {}
@@ -103,9 +114,7 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
                 "installation_number": data.get("installation_number"),
                 "contract_account": data.get("contract_account_number"),
                 "pa": data.get("pa"),
-                "last_update": data.get("last_update"),
-                "attribution": ATTRIBUTION,
-            }
+                "last_update": data.get("last_update"),            }
             return attrs
 
         if self._sid == "engie_factura_restanta_valoare":
@@ -145,9 +154,8 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
             idx = data.get("index_info") or {}
             attrs = {
                 "autocit": idx.get("autocit"),
-                "permite_index": idx.get("permite_index"),
-                "interval_citire": f"{idx.get('start_date')} – {idx.get('end_date')}",
-                "attribution": ATTRIBUTION,
+                "start_citire": idx.get("start_date"),
+                "end_citire": idx.get("end_date"),
                 "icon": "mdi:counter",
                 "friendly_name": "Engie – Index curent",
             }
