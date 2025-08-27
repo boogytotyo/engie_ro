@@ -1,0 +1,110 @@
+name: Build & Upload HACS ZIP
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag (ex: 2.0.2 sau v2.0.2). Dacă lipsește, se folosește ramura/eticheta curentă."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Ensure jq (for JSON parsing)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Determine VERSION (from release tag / dispatch input / ref)
+        id: ver
+        shell: bash
+        run: |
+          set -e
+          if [ "${{ github.event_name }}" = "release" ]; then
+            RAW="${{ github.event.release.tag_name }}"
+          elif [ -n "${{ inputs.tag_name }}" ]; then
+            RAW="${{ inputs.tag_name }}"
+          else
+            RAW="${{ github.ref_name }}"
+          fi
+          # strip refs/tags/ and optional leading 'v'
+          RAW="${RAW#refs/tags/}"
+          RAW="${RAW#v}"
+          echo "VERSION=$RAW" >> "$GITHUB_ENV"
+          echo "version=$RAW" >> "$GITHUB_OUTPUT"
+          echo "Detected VERSION=$RAW"
+
+      - name: Validate manifest version matches tag
+        shell: bash
+        run: |
+          set -e
+          test -f custom_components/engie_ro/manifest.json
+          MVER=$(jq -r '.version' custom_components/engie_ro/manifest.json)
+          if [ -z "$MVER" ] || [ "$MVER" = "null" ]; then
+            echo "manifest.json: .version lipsă"
+            exit 1
+          fi
+          if [ "$MVER" != "${VERSION}" ]; then
+            echo "Eroare: manifest.version ($MVER) != tag/version (${VERSION})"
+            exit 1
+          fi
+          echo "OK: manifest.version == ${VERSION}"
+
+      - name: Check structure
+        shell: bash
+        run: |
+          set -e
+          test -d custom_components/engie_ro || (echo "Lipsește directorul custom_components/engie_ro"; exit 1)
+          # Must contain manifest.json la acest nivel
+          test -f custom_components/engie_ro/manifest.json || (echo "Lipsește manifest.json"; exit 1)
+          echo "Structure OK:"
+          find custom_components/engie_ro -maxdepth 2 -type f -print
+
+      - name: Build ZIP (HACS layout)
+        shell: bash
+        run: |
+          set -e
+          NAME="engie_ro-${VERSION}.zip"
+          # exclude fișiere inutile
+          zip -r "$NAME" custom_components/engie_ro \
+            -x "__pycache__/*" "*.pyc" ".DS_Store" \
+            -x "custom_components/engie_ro/__pycache__/*"
+          ls -lh "$NAME"
+
+      - name: Create checksum
+        shell: bash
+        run: |
+          set -e
+          NAME="engie_ro-${VERSION}.zip"
+          sha256sum "$NAME" | awk '{print $1}' > "${NAME}.sha256"
+          echo "SHA256:"
+          cat "${NAME}.sha256"
+
+      # Upload când evenimentul este 'release' (există deja pagina de release)
+      - name: Upload assets to current Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            engie_ro-${{ env.VERSION }}.zip
+            engie_ro-${{ env.VERSION }}.zip.sha256
+
+      # Fallback: dacă rulezi manual (workflow_dispatch), publică/actualizează Release-ul
+      - name: Create/Update Release and upload assets (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            engie_ro-${{ env.VERSION }}.zip
+            engie_ro-${{ env.VERSION }}.zip.sha256
