@@ -1,0 +1,33 @@
+{
+  "title": "Engie Rumänien",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Bei Engie anmelden",
+        "description": "Gib deine Engie Rumänien Zugangsdaten ein.",
+        "data": {
+          "username": "E-Mail",
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur Engie-API fehlgeschlagen.",
+      "invalid_auth": "Ungültige Anmeldedaten.",
+      "server_error": "Serverfehler bei Engie (500). Bitte später erneut versuchen.",
+      "rate_limited": "Zu viele Anfragen. Bitte später erneut versuchen.",
+      "timeout": "Zeitüberschreitung bei der Engie-API.",
+      "unknown": "Unerwarteter Fehler."
+    },
+    "abort": {
+      "already_configured": "Dieses Konto ist bereits konfiguriert."
+    }
+  },
+  "entity": {
+    "update": {
+      "engie_romania_update": {
+        "name": "Engie România update"
+      }
+    }
+  }
+}

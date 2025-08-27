@@ -1,0 +1,33 @@
+{
+  "title": "Engie România",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Autentificare Engie",
+        "description": "Introdu datele tale de autentificare Engie România.",
+        "data": {
+          "username": "Email",
+          "password": "Parola"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Conectarea la API-ul Engie a eșuat.",
+      "invalid_auth": "Date de autentificare invalide.",
+      "server_error": "Eroare server Engie (500). Încearcă mai târziu.",
+      "rate_limited": "Prea multe cereri. Încearcă mai târziu.",
+      "timeout": "Timp de răspuns depășit pentru API-ul Engie.",
+      "unknown": "Eroare neașteptată."
+    },
+    "abort": {
+      "already_configured": "Acest cont este deja configurat."
+    }
+  },
+  "entity": {
+    "update": {
+      "engie_romania_update": {
+        "name": "Engie România update"
+      }
+    }
+  }
+}

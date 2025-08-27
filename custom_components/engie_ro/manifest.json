@@ -1,0 +1,16 @@
+{
+  "domain": "engie_ro",
+  "name": "Engie România",
+  "version": "2.0.1",
+  "documentation": "https://github.com/boogytotyo/engie_ro/blob/main/README.md",
+  "requirements": [],
+  "codeowners": [
+    "@you"
+  ],
+  "iot_class": "cloud_polling",
+  "integration_type": "hub",
+  "config_flow": true,
+  "loggers": [
+    "custom_components.engie_ro"
+  ]
+}
