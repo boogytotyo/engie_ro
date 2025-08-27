@@ -173,6 +173,31 @@ class EngieDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             try:
                 if isinstance(invoices_details, dict):
                     d = invoices_details.get("data")
+
+                    # Calculate unpaid_total from nested invoices[].invoices[].unpaid
+                    unpaid_total = 0.0
+                    unpaid_items = []
+                    try:
+                        invs = d.get("invoices") if isinstance(d, dict) else None
+                        if isinstance(invs, list):
+                            for acc in invs:
+                                inv_list = (acc or {}).get("invoices") or []
+                                for inv in inv_list:
+                                    upv = inv.get("unpaid")
+                                    try:
+                                        upf = float(str(upv).replace(",", ".")) if upv is not None else 0.0
+                                    except Exception:
+                                        upf = 0.0
+                                    if upf > 0:
+                                        unpaid_total += upf
+                                        unpaid_items.append({
+                                            "invoice_number": inv.get("invoice_number"),
+                                            "unpaid": inv.get("unpaid"),
+                                            "due_date": inv.get("due_date"),
+                                            "total": inv.get("total"),
+                                        })
+                    except Exception as e:
+                        _LOGGER.debug("Parse invoices unpaid failed: %s", e)
                     if isinstance(d, dict):
                         pending = d.get("pending") or []
                         if isinstance(pending, list):
@@ -345,6 +370,8 @@ class EngieDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "unpaid_last_value": unpaid_last_value,
                 "invoices_details": invoices_details,
                 "invoices_history": inv_hist,
+                "unpaid_total": unpaid_total,
+                "unpaid_items": unpaid_items,
                 "invoices_flat": invoices_flat,
                 "invoices_year_current": invoices_year_current,
                 "invoices_year_prev": invoices_year_prev,
