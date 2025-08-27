@@ -2,7 +2,6 @@
 ---
 
 ### `PRIVACY.md`
-```markdown
 # Politica de confidențialitate (Integrare locală)
 
 Această integrare personalizată pentru **Home Assistant** rulează **local** pe instanța ta Home Assistant.  
