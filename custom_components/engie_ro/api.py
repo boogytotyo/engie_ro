@@ -187,8 +187,7 @@ class EngieClient:
             "division": str(division),
             "start_date": str(start_date),
         }
-        return await self._post_json("/v1/index/history", payload)
-    
+        return await self._post_json("/v1/index/history", payload)    
 
     
     async def get_invoices_history(self, poc_number: str, start_date: str, end_date: str, pa: str | None = None) -> Any:
