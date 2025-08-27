@@ -32,10 +32,6 @@ logger:
 ```
 Apoi, în *Developer Tools → Services* → `logger.set_level`, setează `custom_components.engie_ro: debug`.
 
-## 7) Entitatea de update nu arată ultima versiune
-- În `custom_components/engie_ro/update.py` setează `REPO = "boogytotyo/engie_ro"`.  
-- Repornește Home Assistant și verifică `update.engie_romania_update`.
-
-## 8) Cum dezinstalez complet integrarea?
+## 7) Cum dezinstalez complet integrarea?
 - *Settings → Devices & Services* → **Remove Integration**.  
 - Oprește Home Assistant și, opțional, șterge directorul `/config/custom_components/engie_ro` și intrările aferente din `/config/.storage` (doar dacă știi ce faci).
