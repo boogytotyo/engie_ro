@@ -1,8 +1,5 @@
 
----
-
 ### `FAQ.md`
-```markdown
 # Depanare / Întrebări frecvente (FAQ)
 
 ## 1) Entitatea apare cu sufixul „_2”
