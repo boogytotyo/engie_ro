@@ -52,7 +52,7 @@ Funcționează prin autentificare la portalul Engie și interogarea API-urilor l
 ---
 
 ---
-##🔑 Autentificare: e-mail/parolă sau bearer token (avansat)
+## 🔑 Autentificare: e-mail/parolă sau bearer token (avansat)
 
 Integrarea suportă autentificare standard (e-mail/parolă). Pentru situațiile în care autentificarea clasică e blocată (ex. 2FA, schimbări temporare în portal), poți folosi token (tip Bearer) extras din aplicația/portalul Engie.
 
@@ -73,7 +73,7 @@ Reîncarcă pagina și filtrează după myservices sau invoices / index.
 Alege un request → tab-ul Headers → secțiunea Request Headers.
 Copiază valoarea din Authorization (formatul este Bearer <TOKEN>).
 
-Notă: În unele răspunsuri vei vedea și identificatori de context (ex. PA, POC etc.). Integrarea îi poate descoperi automat; nu ai nevoie să-i introduci manual.
+> **Notă:** nu publica tokenul, nu-l urca în GitHub. Dacă vrei să-l ții într-un fișier, folosește secrets.yaml și lipește tokenul acolo, nu direct în text. Tokenurile **sunt temporare**. Când expira, integrarea poate începe să dea erori ```yaml(401 invalid_auth)```.
 ---
 
 ## 🔐 Configurare
