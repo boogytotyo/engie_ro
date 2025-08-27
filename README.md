@@ -2,6 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/boogytotyo/engie_ro?display_name=tag&sort=semver)](https://github.com/boogytotyo/engie_ro/releases)
 [![Downloads](https://img.shields.io/github/downloads/boogytotyo/engie_ro/total.svg)](https://github.com/boogytotyo/engie_ro/releases)
+![Downloads](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/boogytotyo/engie_ro/main/metrics/shields/downloads.json&cacheSeconds=3600)
 ![Latest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/boogytotyo/engie_ro/main/metrics/shields/latest_release.json&cacheSeconds=3600)
 ![HA installs](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Engie%20HA%20installs&suffix=%20installs&cacheSeconds=14400&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.engie_ro.total)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
