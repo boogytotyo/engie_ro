@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/boogytotyo/engie_ro?display_name=tag&sort=semver)](https://github.com/boogytotyo/engie_ro/releases)
 [![Downloads](https://img.shields.io/github/downloads/boogytotyo/engie_ro/total.svg)](https://github.com/boogytotyo/engie_ro/releases)
-![Downloads](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/boogytotyo/engie_ro/main/metrics/shields/downloads.json)
+[![Downloads](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/boogytotyo/engie_ro/main/metrics/shields/downloads.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Integrare custom pentru **Home Assistant** care afișează datele tale de la **Engie România** (facturi, istoric index, date contract etc.).  
