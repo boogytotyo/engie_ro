@@ -10,7 +10,7 @@ on:
   release:
     types: [published]
 
-  # ruleaza zilnic (an caz ca apar descarcări noi)
+  # ruleaza zilnic (in caz ca apar descarcări noi)
   schedule:
     - cron: "20 0 * * *"
 
