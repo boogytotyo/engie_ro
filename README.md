@@ -51,6 +51,31 @@ Funcționează prin autentificare la portalul Engie și interogarea API-urilor l
 
 ---
 
+---
+🔑 Autentificare: e-mail/parolă sau bearer token (avansat)
+
+Integrarea suportă autentificare standard (e-mail/parolă). Pentru situațiile în care autentificarea clasică e blocată (ex. 2FA, schimbări temporare în portal), poți folosi token (tip Bearer) extras din aplicația/portalul Engie.
+
+Recomandat pentru majoritatea utilizatorilor: e-mail + parolă.
+Avansat (doar dacă știi ce faci): token Bearer. Tokenul expiră periodic și va trebui reîmprospătat.
+
+A) Autentificare standard (e-mail/parolă)
+Instalează integrarea și apasă Add Integration → Engie România.
+Introdu Email și Parola de la contul tău Engie.
+
+Salvează.
+
+B) Autentificare cu token (avansat)
+Cum obții tokenul din portalul web (cel mai simplu)
+Autentifică-te în portalul Engie (browser desktop).
+Deschide Developer Tools → Network (Ctrl+Shift+I / F12).
+Reîncarcă pagina și filtrează după myservices sau invoices / index.
+Alege un request → tab-ul Headers → secțiunea Request Headers.
+Copiază valoarea din Authorization (formatul este Bearer <TOKEN>).
+
+Notă: În unele răspunsuri vei vedea și identificatori de context (ex. PA, POC etc.). Integrarea îi poate descoperi automat; nu ai nevoie să-i introduci manual.
+---
+
 ## 🔐 Configurare
 
 La adăugare, ți se cere **Email** și **Parola** (cele de la contul tău Engie).  
