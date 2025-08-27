@@ -1,5 +1,7 @@
 {
   "name": "Engie România",
+  "content_in_root": false,
   "render_readme": true,
-  "country": ["RO"]
+  "domains": ["sensor"],
+  "country": "RO"
 }
