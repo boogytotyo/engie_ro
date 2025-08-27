@@ -44,7 +44,7 @@ Funcționează prin autentificare la portalul Engie și interogarea API-urilor l
 3. **Restart** Home Assistant.
 4. **Settings → Devices & Services → Add Integration** → caută „**Engie România**”.
 
-### B. HACS (opțional, ca *Custom Repository*)
+### B. HACS (opțional, prin *Custom Repository*)
 1. HACS → **Integrations** → ⋮ **Custom repositories**.
 2. Repository: `https://github.com/boogytotyo/engie_ro`, Category: **Integration**, **Add**.
 3. Instalează „Engie România”, apoi **Restart** HA și **Add Integration**.
