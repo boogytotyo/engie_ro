@@ -1,0 +1,17 @@
+# Etichetare pe baza fișierelor modificate în PR
+documentation:
+  - '**/*.md'
+  - 'README*'
+  - 'docs/**'
+
+ci:
+  - '.github/**'
+
+integration:
+  - 'custom_components/**'
+  - 'custom_components/engie_ro/**'
+
+dependencies:
+  - '.github/workflows/**'
+  - 'requirements*.txt'
+  - 'pyproject.toml'
