@@ -1,0 +1,97 @@
+name: 🐞 Bug report
+description: Raportează o problemă în integrarea Engie România
+labels: ["bug"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Te rog NU include token-uri sau parole.** Șterge orice date sensibile din loguri/capturi.
+  - type: input
+    id: ha-version
+    attributes:
+      label: Versiune Home Assistant
+      description: Exemplu: 2025.8.2
+      placeholder: "2025.x.y"
+    validations:
+      required: true
+  - type: input
+    id: engie-ro-version
+    attributes:
+      label: Versiune integrare engie_ro
+      description: O vezi în HACS (dacă folosești) sau în manifest.
+      placeholder: "v2.0.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Metoda de instalare
+      options:
+        - HACS
+        - Manual (custom_components)
+    validations:
+      required: true
+  - type: dropdown
+    id: auth-method
+    attributes:
+      label: Metoda de autentificare folosită
+      options:
+        - Email + Parolă (login automat în integrare)
+        - Token Bearer (avansat)
+    validations:
+      required: true
+  - type: dropdown
+    id: ha-env
+    attributes:
+      label: Mediu HA
+      options:
+        - Home Assistant OS
+        - Home Assistant Supervised
+        - Home Assistant Container (Docker)
+        - Home Assistant Core (venv)
+    validations:
+      required: true
+  - type: textarea
+    id: describe
+    attributes:
+      label: Descriere
+      description: Ce se întâmplă? Ce te așteptai să se întâmple?
+      placeholder: "Descriere clară și concisă a problemei"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pași de reprodus
+      description: Listează pașii exacți pentru a vedea bug-ul.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Loguri relevante
+      description: Atașează erorile din Home Assistant (Developer Tools → Logs). **Nu include secretele.**
+      render: shell
+      placeholder: |
+        Logger: custom_components.engie_ro...
+        Traceback (most recent call last):
+        ...
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Capturi de ecran
+      description: Opțional, adaugă imagini pentru a explica problema.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Liste de verificare
+      options:
+        - label: Am căutat în Issues existente și nu am găsit un duplicat.
+          required: true
+        - label: Am eliminat token-uri/parole din loguri și capturi.
+          required: true
