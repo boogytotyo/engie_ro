@@ -1,17 +1,24 @@
-# Etichetare pe baza fișierelor modificate în PR
 documentation:
-  - '**/*.md'
-  - 'README*'
-  - 'docs/**'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'README*'
+      - 'docs/**'
 
 ci:
-  - '.github/**'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
 
 integration:
-  - 'custom_components/**'
-  - 'custom_components/engie_ro/**'
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'custom_components/**'
+      - 'custom_components/engie_ro/**'
 
 dependencies:
-  - '.github/workflows/**'
-  - 'requirements*.txt'
-  - 'pyproject.toml'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
