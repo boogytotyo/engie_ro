@@ -158,7 +158,7 @@ jobs:
             );
 
       - name: Commit metrics
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "chore(metrics): refresh totals, latest & top5"
           file_pattern: metrics/**
