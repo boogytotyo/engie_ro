@@ -23,13 +23,13 @@ Funcționează prin autentificare la portalul Engie și interogarea API-urilor l
   - *State*: **cel mai recent index**.
   - *Atribute*: `luna: index` pentru ultimele luni (descrescător).
 - **Index curent** – `sensor.engie_index_curent`
-  - *State*: ultimul index raportat.
+  - *State*: **Da** daca suntem in perioada transmitere index; **Nu** daca nu suntem in perioada trimitere index.
   - *Atribute*: `autocit`, `permite_index`, `interval_citire: start – end`, meta.
 - **Date utilizator/contract** – `sensor.engie_date_utilizator_contract`
   - *State*: **PA** (cod punct de facturare).
   - *Atribute*: `email`, `nume`, `telefon`, `adresa`, `poc_number`, `division`, `installation_number`, **`CONTRACT_ACCOUNT`**, **`PA`**, `last_update`, `attribution`.
 - **Valoare factură restantă** – `sensor.engie_factura_restanta_valoare`
-  - *State*: total restanțe; *atribut*: `unpaid_list` (listează restanțele brute).
+  - *State*: valoarea ultimei facturi **neplatite**; *atribut*: `unpaid_list` (listează restanțele brute).
 - **Update entity** – `update.engie_romania_update`
   - *installed_version* din `manifest.json`, *latest_version* din **GitHub Releases**, `release_url`, `release_summary`.
 
