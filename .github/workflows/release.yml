@@ -1,19 +1,21 @@
-name: release
+name: Release
+run-name: "🚀 Release ${{ github.ref_name }} • build & publish"
+
 on:
   push:
     tags:
-      - "*.*.*"   # ex: 1.0.0 (fără 'v')
+      - "*.*.*"   # ex: 1.0.0
 
 jobs:
   build-and-release:
-    name: Build & Publish
+    name: "📦 Build & 📤 Publish"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Build zip artifacts (HACS-compatible structure)
+      - name: 🧱 Build zip artifacts (HACS-compatible structure)
         run: |
           set -e
           TAG="${GITHUB_REF_NAME}"  # ex: 1.0.0
@@ -23,12 +25,11 @@ jobs:
           zip -r "../../build/engie_ro-${TAG}.zip" . \
             -x "__pycache__/*" -x "*.pyc" -x ".DS_Store"
           cd - >/dev/null
-          # asset cu nume fix pentru HACS (dacă hacs.json folosește filename fix)
+          # asset cu nume fix pentru HACS (când filename din hacs.json e constant)
           cp "build/engie_ro-${TAG}.zip" "build/engie_ro.zip"
-          # (opțional) checksum pentru varianta versionată
           sha256sum "build/engie_ro-${TAG}.zip" > "build/engie_ro-${TAG}.zip.sha256"
 
-      - name: Publish GitHub Release
+      - name: 🏷️ Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
