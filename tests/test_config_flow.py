@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.engie_ro.const import (
     CONF_EMAIL,
@@ -19,15 +20,17 @@ from custom_components.engie_ro.const import (
 async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
     email = "u@x.y"
     password = "secret"
-    form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
-    assert form_result["type"] == "form"
 
-    with (
-        patch(
-            "custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()
-        ) as m_login,
-        patch("custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()),
+    # Evităm crearea reală a ClientSession-ului (care lasă thread-uri în urmă)
+    with patch(
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
+        return_value=object(),
+    ), patch("custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()) as m_login, patch(
+        "custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()
     ):
+        form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        assert form_result["type"] == "form"
+
         if login_ok:
             m_login.return_value = "TOK"
         else:
@@ -38,9 +41,7 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
             CONF_PASSWORD: password,
             CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
         }
-        result = await hass.config_entries.flow.async_configure(
-            form_result["flow_id"], user_input=user_input
-        )
+        result = await hass.config_entries.flow.async_configure(form_result["flow_id"], user_input=user_input)
 
     if login_ok:
         assert result["type"] == "create_entry"
@@ -53,16 +54,17 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
 
 
 async def test_options_flow(hass: HomeAssistant):
-    entry = config_entries.ConfigEntry(
-        version=1,
+    # Folosește MockConfigEntry (API-ul ConfigEntry real cere câmpuri extra)
+    entry = MockConfigEntry(
         domain=DOMAIN,
         title="Engie (u@x.y)",
         data={CONF_EMAIL: "u@x.y", CONF_PASSWORD: "p"},
         options={CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL},
-        source="user",
-        entry_id="test",
+        unique_id="engie_ro:test",
+        version=1,
+        minor_version=1,
     )
-    hass.config_entries._entries.append(entry)  # noqa: SLF001
+    entry.add_to_hass(hass)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == "form"
