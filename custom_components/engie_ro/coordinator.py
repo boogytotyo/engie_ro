@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import aiohttp
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Dict
+from typing import Any
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
+from .api import EngieClient, EngieUnauthorized
+from .auth import EngieMobileAuth
 from .const import (
-    AUTH_MODE_BEARER,
     AUTH_MODE_MOBILE,
     CONF_AUTH_MODE,
     CONF_BASE_URL,
@@ -25,8 +26,6 @@ from .const import (
     DOMAIN,
     UPDATE_INTERVAL_SEC,
 )
-from .api import EngieClient, EngieHTTPError, EngieUnauthorized
-from .auth import EngieMobileAuth
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ class EngieTokens:
     refresh_epoch: Any | None
 
 
-class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
+class EngieDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator pentru integrarea Engie România."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -74,7 +73,7 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
     # ---------- File I/O în executor ----------
     def _read_token_sync(self) -> str | None:
         try:
-            with open(self._token_file, "r", encoding="utf-8") as f:
+            with open(self._token_file, encoding="utf-8") as f:
                 return _clean(f.read())
         except Exception:
             return None
@@ -91,6 +90,7 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
     async def _save_token_file(self, token: str) -> None:
         await self.hass.async_add_executor_job(self._write_token_sync, token)
+
     # ------------------------------------------
 
     async def _ensure_client(self) -> EngieClient:
@@ -127,7 +127,7 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         # Unele aplicații copiază device_id cu \n la final; curățăm ferm.
         return _clean(device_id or "device")
 
-    async def _async_update(self) -> Dict[str, Any]:
+    async def _async_update(self) -> dict[str, Any]:
         """Fetch principal (păstrăm structura pentru senzori)."""
         await self._login_mobile_if_needed()
         client = await self._ensure_client()
@@ -144,7 +144,7 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 raise
 
         # Structura datelor pentru senzori — păstrată 1:1
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "user": {},
             "contracts": {},
             "indexes": {},
@@ -156,5 +156,5 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         # TODO: apelează aici client.get_* conform logicii tale existente
         return data
 
-    async def _async_update_data(self) -> Dict[str, Any]:
+    async def _async_update_data(self) -> dict[str, Any]:
         return await self._async_update()
