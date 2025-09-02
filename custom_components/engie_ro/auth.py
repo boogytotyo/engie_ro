@@ -18,9 +18,7 @@ class AuthManager:
         self.client.token = tok
         self._exp_epoch = b.get("exp_epoch")
 
-        if isinstance(self._exp_epoch, int | float) and time.time() > float(
-            self._exp_epoch
-        ) - 120:
+        if isinstance(self._exp_epoch, int | float) and time.time() > float(self._exp_epoch) - 120:
             if self.auth_mode == AUTH_MODE_MOBILE:
                 return await self._login_mobile()
 

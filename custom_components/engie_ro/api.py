@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Any
 
 import aiohttp
@@ -65,7 +64,5 @@ class EngieClient:
                 raise EngieHTTPError(f"LOGIN: non-JSON response: {txt}") from err
             data = j.get("data") if isinstance(j, dict) else None
             if not isinstance(data, dict):
-                raise EngieHTTPError(
-                    f"Eroare API {url} → {_explain_status(r.status)}"
-                )
+                raise EngieHTTPError(f"Eroare API {url} → {_explain_status(r.status)}")
             return data
