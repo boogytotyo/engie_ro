@@ -3,7 +3,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -22,11 +21,15 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
     password = "secret"
 
     # Evităm crearea reală a ClientSession-ului (care lasă thread-uri în urmă)
-    with patch(
-        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
-        return_value=object(),
-    ), patch("custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()) as m_login, patch(
-        "custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()
+    with (
+        patch(
+            "homeassistant.helpers.aiohttp_client.async_get_clientsession",
+            return_value=object(),
+        ),
+        patch(
+            "custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()
+        ) as m_login,
+        patch("custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()),
     ):
         form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
         assert form_result["type"] == "form"
@@ -41,7 +44,9 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
             CONF_PASSWORD: password,
             CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
         }
-        result = await hass.config_entries.flow.async_configure(form_result["flow_id"], user_input=user_input)
+        result = await hass.config_entries.flow.async_configure(
+            form_result["flow_id"], user_input=user_input
+        )
 
     if login_ok:
         assert result["type"] == "create_entry"
