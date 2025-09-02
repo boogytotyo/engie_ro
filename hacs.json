@@ -1,9 +1,9 @@
 {
   "name": "Engie România",
   "content_in_root": false,
-  "zip_release": true,
   "render_readme": true,
-  "domains": ["sensor"],
+  "zip_release": true,
   "filename": "engie_ro.zip",
-  "country": "RO"
+  "homeassistant": "2024.6.0",
+  "country": ["RO"]
 }
