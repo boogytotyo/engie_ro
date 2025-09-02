@@ -55,7 +55,7 @@ class EngieSensor(SensorEntity):
     def native_value(self) -> Any:
         data = self._coordinator.data or {}
         value = data.get(self._key)
-        if isinstance(value, (dict, list)):
+        if isinstance(value, dict | list):
             return len(value)
         return value
 
@@ -63,6 +63,6 @@ class EngieSensor(SensorEntity):
     def extra_state_attributes(self) -> Dict[str, Any] | None:
         data = self._coordinator.data or {}
         val = data.get(self._key)
-        if isinstance(val, (dict, list)):
+        if isinstance(val, dict | list):
             return {"data": val}
         return None
