@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-from homeassistant.const import Platform
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .const import CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL, DOMAIN
@@ -19,6 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval = max(update_interval, 300)
 
     from .coordinator import create_coordinator
+
     coordinator = await create_coordinator(hass, entry, timedelta(seconds=update_interval))
     hass.data[DOMAIN][entry.entry_id] = coordinator
 

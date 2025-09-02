@@ -5,8 +5,8 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.const import UnitOfEnergy
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DEVICE_NAME_FMT, DOMAIN, MANUFACTURER
@@ -24,8 +24,15 @@ class EngieSensorDescription:
 
 
 SENSORS: list[EngieSensorDescription] = [
-    EngieSensorDescription("current_index.value", "Index curent", icon="mdi:counter", native_unit=UnitOfEnergy.KILO_WATT_HOUR),
-    EngieSensorDescription("billing_history.last.amount", "Ultima factură", icon="mdi:receipt-text"),
+    EngieSensorDescription(
+        "current_index.value",
+        "Index curent",
+        icon="mdi:counter",
+        native_unit=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
+    EngieSensorDescription(
+        "billing_history.last.amount", "Ultima factură", icon="mdi:receipt-text"
+    ),
 ]
 
 
@@ -50,7 +57,14 @@ class EngieSensor(SensorEntity):
     _attr_should_poll = False
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: EngieCoordinator, entry_id: str, device: DeviceInfo, desc: EngieSensorDescription, pa: str):
+    def __init__(
+        self,
+        coordinator: EngieCoordinator,
+        entry_id: str,
+        device: DeviceInfo,
+        desc: EngieSensorDescription,
+        pa: str,
+    ):
         self.coordinator = coordinator
         self.entity_description = desc
         self._attr_unique_id = f"{entry_id}_{pa}_{desc.key}"
