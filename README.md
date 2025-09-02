@@ -7,6 +7,12 @@
 ![HA installs](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Engie%20HA%20installs&suffix=%20installs&cacheSeconds=14400&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.engie_ro.total)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+---
+[![🧹 Lint](https://github.com/boogytotyo/engie_ro/actions/workflows/lint.yml/badge.svg)](https://github.com/boogytotyo/engie_ro/actions/workflows/lint.yml)
+[![✅ Validate](https://github.com/boogytotyo/engie_ro/actions/workflows/validate.yml/badge.svg)](https://github.com/boogytotyo/engie_ro/actions/workflows/validate.yml)
+[![🚀 Release](https://github.com/boogytotyo/engie_ro/actions/workflows/release.yml/badge.svg)](https://github.com/boogytotyo/engie_ro/actions/workflows/release.yml)
+
+
 Integrare custom pentru **Home Assistant** care afișează datele tale de la **Engie România** (facturi, istoric index, date contract etc.).  
 Funcționează prin autentificare la portalul Engie și interogarea API-urilor lor publice.
 
