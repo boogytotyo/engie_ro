@@ -14,7 +14,7 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
     form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source":"user"})
     assert form_result["type"] == "form"
 
-    with patch("custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()) as m_login,          patch("custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()) as m_save:
+    with patch("custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()) as m_login,          patch("custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()):
 
         if login_ok:
             m_login.return_value = "TOK"

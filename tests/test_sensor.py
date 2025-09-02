@@ -43,6 +43,5 @@ async def test_sensor_values(hass: HomeAssistant, entry: ConfigEntry):
             "billing_history": {"items":[{"id":"B9","amount":88.5}],"last":{"id":"B9","amount":88.5}},
         }
 
-        states = hass.states.async_all()
         assert coord.data["current_index"]["value"] == 111.2
         assert coord.data["billing_history"]["last"]["amount"] == 88.5
