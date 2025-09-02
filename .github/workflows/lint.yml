@@ -1,4 +1,6 @@
-name: lint
+name: Lint
+run-name: "🧹 Lint • ruff+black • ${{ github.ref_name }} @ ${{ github.sha }}"
+
 on:
   push:
     branches: [ main ]
@@ -9,51 +11,49 @@ permissions:
 
 jobs:
   lint:
+    name: "🧹 ruff & black"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - name: Set up Python
+      - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Upgrade pip
+      - name: ⬆️ Upgrade pip
         run: python -m pip install --upgrade pip wheel setuptools
 
-      - name: Install lint tools
+      - name: 📦 Install lint tools
         run: |
           pip install "ruff==0.5.6" "black==24.8.0"
 
-      # ---- AUTO-FIX ----
-      - name: Ruff (check --fix)
+      - name: 🧹 Ruff (check --fix)
         run: ruff check . --fix
 
-      - name: Ruff (format)
+      - name: 🧾 Ruff (format)
         run: ruff format .
 
-      - name: Black (format)
+      - name: 🎨 Black (format)
         run: black .
 
-      # Commit & push doar pe push-uri din repo (nu pe PR din fork)
-      - name: Commit auto-fix
+      - name: 💾 Commit auto-fix
         if: github.event_name == 'push' && github.ref_name == 'main'
         run: |
           git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git add -A
-          git commit -m "ci: auto-fix (ruff/black)" || echo "No changes to commit"
+          git commit -m "ci(lint): auto-fix (ruff/black)" || echo "No changes to commit"
           git push || echo "Nothing to push"
 
-      # ---- VERIFICARE ----
-      - name: Ruff (check)
+      - name: ✅ Ruff (check)
         run: ruff check .
 
-      - name: Black (check)
+      - name: ✅ Black (check)
         run: black --check .
