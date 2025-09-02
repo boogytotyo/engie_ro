@@ -8,30 +8,32 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import ATTRIBUTION, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-):
+) -> None:
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
     async_add_entities(
         [
-            EngieFacturaSensor(coordinator, entry),
-            EngieConsumSensor(coordinator, entry),
-            EngieUpdateSensor(coordinator, entry),
+            EngieArhivaFacturi(coordinator, entry),
+            EngieIstoricIndex(coordinator, entry),
+            EngieIndexCurent(coordinator, entry),
+            EngieDateUtilizatorContract(coordinator, entry),
+            EngieFacturaRestantaValoare(coordinator, entry),
         ],
         True,
     )
 
 
-class BaseEngieSensor(SensorEntity):
+class _BaseEngieSensor(SensorEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, entry):
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
         self.coordinator = coordinator
         self._entry = entry
 
@@ -39,7 +41,7 @@ class BaseEngieSensor(SensorEntity):
     def available(self) -> bool:
         return self.coordinator.last_update_success
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         await self.coordinator.async_request_refresh()
 
     @property
@@ -47,165 +49,264 @@ class BaseEngieSensor(SensorEntity):
         return False
 
     async def async_added_to_hass(self) -> None:
-        self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
+        self.async_on_remove(
+            self.coordinator.async_add_listener(self.async_write_ha_state)
+        )
 
 
-class EngieFacturaSensor(BaseEngieSensor):
-    _attr_icon = "mdi:file-document"
-    _attr_name = "Engie – Facturi"
+# 1) Arhivă facturi
+class EngieArhivaFacturi(_BaseEngieSensor):
+    _attr_name = "Engie – Arhivă facturi"
+    _attr_icon = "mdi:cash-register"
 
-    def __init__(self, coordinator, entry):
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
-        self.entity_id = "sensor.engie_facturi"
+        self.entity_id = "sensor.engie_arhiva_facturi"
 
     @property
     def unique_id(self) -> str:
-        return f"{self._entry.entry_id}_facturi"
+        return f"{self._entry.entry_id}_arhiva_facturi"
 
     @property
-    def native_value(self):
-        facturi = self.coordinator.data.get("facturi") or []
-        if facturi:
-            return facturi[0].get("amount")
-        return None
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        facturi = self.coordinator.data.get("facturi") or []
-        attrs: dict[str, Any] = {}
-        for f in facturi:
-            d = f.get("date")
-            a = f.get("amount")
-            if d and a is not None:
-                attrs[d] = f"{a} lei"
-        attrs["friendly_name"] = "Engie – Facturi"
-        attrs["icon"] = "mdi:file-document"
-        return attrs
-
-
-class EngieConsumSensor(BaseEngieSensor):
-    _attr_icon = "mdi:counter"
-    _attr_name = "Engie – Consum"
-
-    def __init__(self, coordinator, entry):
-        super().__init__(coordinator, entry)
-        self.entity_id = "sensor.engie_consum"
-
-    @property
-    def unique_id(self) -> str:
-        return f"{self._entry.entry_id}_consum"
-
-    @property
-    def native_value(self):
-        consum = self.coordinator.data.get("consum") or []
-        if consum:
-            return consum[0].get("index")
-        return None
+    def native_value(self) -> Any:
+        inv = self.coordinator.data.get("invoices") or {}
+        invoices = inv.get("Invoices") or []
+        if not invoices:
+            return None
+        # presupunem că e sortată descendent sau luăm maximum după dată
+        last = invoices[0]
+        return last.get("amount")
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        items = self.coordinator.data.get("consum") or []
-        out: list[dict[str, Any]] = []
-        for m in items:
-            if isinstance(m, dict):
-                d = get_date(m)
-                a = get_amount(m)
-                if d and a is not None:
-                    out.append({"date": d[:10], "amount": a})
+        inv = self.coordinator.data.get("invoices") or {}
+        items = inv.get("Invoices") or []
+
+        months: list[tuple[str, float]] = []
+        for it in items:
+            d = it.get("date") or it.get("InvoiceDate") or it.get("DateIn")
+            a = it.get("amount")
+            if not d or a is None:
+                continue
+            label = _format_month_label(d)
+            months.append((label, float(a)))
 
         attrs: dict[str, Any] = {}
-        for it in out:
-            attrs[it["date"]] = f"{it['amount']} mc"
-
-        # grupare pe luni (ultimele 12)
-        by_month = group_by_month(out)
-        luni = [
-            "ianuarie",
-            "februarie",
-            "martie",
-            "aprilie",
-            "mai",
-            "iunie",
-            "iulie",
-            "august",
-            "septembrie",
-            "octombrie",
-            "noiembrie",
-            "decembrie",
-        ]
-
-        def fmt(x: float) -> str:
-            return f"{x:.2f}".replace(".", ",") + " lei"
-
         total = 0.0
-        for y, m in sorted(by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True)[:12]:
-            values = by_month[(y, m)]
-            s = sum(v["amount"] for v in values if v.get("amount"))
-            total += s
-            luna = luni[m - 1] if 1 <= m <= 12 else str(m)
-            attrs[f"{luna} {y}"] = fmt(s)
+        for label, amount in months[:12]:
+            total += amount
+            attrs[f"{label}"] = f"{_fmt(amount)} lei"
 
-        attrs["Total"] = fmt(total)
-        attrs["friendly_name"] = "Engie – Consum"
-        attrs["icon"] = "mdi:counter"
+        attrs["──────────"] = ""
+        attrs["Plăți efectuate"] = len(months[:12])
+        attrs["Total suma achitată"] = f"{_fmt(total)} lei"
+        attrs["icon"] = "mdi:cash-register"
+        attrs["friendly_name"] = "Engie – Arhivă facturi"
+        attrs["attribution"] = ATTRIBUTION
         return attrs
 
 
-class EngieUpdateSensor(BaseEngieSensor):
-    _attr_name = "Engie România update"
+# 2) Istoric index
+class EngieIstoricIndex(_BaseEngieSensor):
+    _attr_name = "Engie – Istoric index"
+    _attr_icon = "mdi:counter"
 
-    def __init__(self, coordinator, entry):
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
-        self.entity_id = "sensor.engie_ro_update"
+        self.entity_id = "sensor.engie_istoric_index"
 
     @property
     def unique_id(self) -> str:
-        return f"{self._entry.entry_id}_update"
+        return f"{self._entry.entry_id}_istoric_index"
 
     @property
-    def native_value(self):
-        # versiunea citită în __init__.py din manifest
-        version = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get("version")
-        return version
+    def native_value(self) -> Any:
+        hist = self.coordinator.data.get("index_history") or {}
+        items = hist.get("History") or []
+        if not items:
+            return None
+        # cel mai recent index
+        last = items[0]
+        return last.get("index")
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        version = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get("version")
-        return {
-            "auto_update": False,
-            "display_precision": 0,
-            "installed_version": version,
-            "in_progress": False,
-            "latest_version": version,
-            "release_summary": None,
-            "release_url": f"https://github.com/boogytotyo/engie_ro/releases/tag/{version}",
-            "skipped_version": None,
-            "title": None,
-            "update_percentage": None,
-            "entity_picture": "https://brands.home-assistant.io/_/engie_ro/icon.png",
-            "friendly_name": "Engie România update",
-            "supported_features": 23,
+        hist = self.coordinator.data.get("index_history") or {}
+        items = hist.get("History") or []
+
+        attrs: dict[str, Any] = {}
+        for it in items[:12]:
+            start = it.get("start")
+            end = it.get("end")
+            index = it.get("index")
+            if not end or index is None:
+                continue
+            label = _format_month_label(end)
+            attrs[f"{label}"] = index
+
+        attrs["icon"] = "mdi:counter"
+        attrs["friendly_name"] = "Engie – Istoric index"
+        attrs["attribution"] = ATTRIBUTION
+        return attrs
+
+
+# 3) Index curent (fereastră raportare)
+class EngieIndexCurent(_BaseEngieSensor):
+    _attr_name = "Engie – Index curent"
+    _attr_icon = "mdi:counter"
+
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self.entity_id = "sensor.engie_index_curent"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._entry.entry_id}_index_curent"
+
+    @property
+    def native_value(self) -> Any:
+        wnd = self.coordinator.data.get("index_window") or {}
+        return "Da" if wnd.get("in_window") else "Nu"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        wnd = self.coordinator.data.get("index_window") or {}
+        attrs = {
+            "autocit": bool(wnd.get("in_window")),
+            "permite_index": bool(wnd.get("allow_submit")),
+            "interval_citire": _interval_label(wnd.get("start"), wnd.get("end")),
+            "last_index": wnd.get("last_index"),
+            "icon": "mdi:counter",
+            "friendly_name": "Engie – Index curent",
+            "attribution": ATTRIBUTION,
         }
+        return attrs
 
 
-# === Helper functions ===
+# 4) Date utilizator/contract
+class EngieDateUtilizatorContract(_BaseEngieSensor):
+    _attr_name = "Engie – Date utilizator/contract"
+    _attr_icon = "mdi:account"
+
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self.entity_id = "sensor.engie_date_utilizator_contract"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._entry.entry_id}_date_utilizator"
+
+    @property
+    def native_value(self) -> Any:
+        u = self.coordinator.data.get("user_details") or {}
+        # PA/POC/contract accounting – afișăm un identificator scurt
+        return u.get("PA") or u.get("poc_number") or u.get("contract") or "—"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        u = self.coordinator.data.get("user_details") or {}
+        attrs = {
+            "email": u.get("email"),
+            "nume": u.get("name") or u.get("nume"),
+            "telefon": u.get("phone") or u.get("telefon"),
+            "adresa": u.get("address"),
+            "poc_number": u.get("poc_number"),
+            "division": u.get("division"),
+            "installation_number": u.get("installation_number"),
+            "CONTRACT_ACCOUNT": u.get("CONTRACT_ACCOUNT"),
+            "PA": u.get("PA"),
+            "last_update": u.get("last_update"),
+            "icon": "mdi:account",
+            "friendly_name": "Engie – Date utilizator/contract",
+            "attribution": ATTRIBUTION,
+        }
+        return attrs
 
 
-def get_date(m: dict[str, Any]) -> str | None:
-    return m.get("date")
+# 5) Valoare factură restantă
+class EngieFacturaRestantaValoare(_BaseEngieSensor):
+    _attr_name = "Engie – Valoare factură restantă"
+    _attr_icon = "mdi:file-document-alert"
+
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self.entity_id = "sensor.engie_factura_restanta_valoare"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._entry.entry_id}_restanta"
+
+    @property
+    def native_value(self) -> Any:
+        unpaid = self.coordinator.data.get("unpaid") or {}
+        items = unpaid.get("Invoices") or []
+        if not items:
+            return 0
+        last = items[0]
+        return last.get("amount", 0)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        unpaid = self.coordinator.data.get("unpaid") or {}
+        items = unpaid.get("Invoices") or []
+
+        attrs: dict[str, Any] = {}
+        total = 0.0
+        if not items:
+            attrs["Fara restante"] = ""
+        else:
+            for it in items:
+                a = it.get("amount")
+                d = it.get("date")
+                if a is None:
+                    continue
+                total += float(a)
+                label = _format_month_label(d) if d else "Factură"
+                attrs[label] = f"{_fmt(a)} lei"
+
+        attrs["──────────"] = ""
+        attrs["Plăți restante"] = len(items)
+        attrs["Total suma neachitată"] = f"{_fmt(total)} lei"
+        attrs["icon"] = "mdi:file-document-alert"
+        attrs["friendly_name"] = "Engie – Valoare factură restantă"
+        attrs["attribution"] = ATTRIBUTION
+        return attrs
 
 
-def get_amount(m: dict[str, Any]) -> float | None:
-    return m.get("amount")
+# ————— Helpers —————
+
+def _fmt(x: float | int) -> str:
+    try:
+        return f"{float(x):.2f}".replace(".", ",")
+    except Exception:
+        return "0,00"
 
 
-def group_by_month(items: list[dict[str, Any]]) -> dict[tuple[int, int], list[dict]]:
-    by_month: dict[tuple[int, int], list[dict]] = {}
-    for it in items[:240]:
-        try:
-            y = int(it["date"][0:4])
-            m = int(it["date"][5:7])
-        except Exception:
-            continue
-        by_month.setdefault((y, m), []).append(it)
-    return by_month
+def _format_month_label(date_str: str | None) -> str:
+    if not date_str or len(date_str) < 7:
+        return "—"
+    # acceptă "YYYY-MM" sau "YYYY-MM-DD"
+    y = int(date_str[0:4])
+    m = int(date_str[5:7])
+    luni = [
+        "ianuarie",
+        "februarie",
+        "martie",
+        "aprilie",
+        "mai",
+        "iunie",
+        "iulie",
+        "august",
+        "septembrie",
+        "octombrie",
+        "noiembrie",
+        "decembrie",
+    ]
+    nume = luni[m - 1] if 1 <= m <= 12 else str(m)
+    return f"{nume}"
+
+
+def _interval_label(start: str | None, end: str | None) -> str:
+    s = start[0:10] if start else "—"
+    e = end[0:10] if end else "—"
+    return f"{s} – {e}"
