@@ -81,9 +81,7 @@ class EngieOptionsFlow(config_entries.OptionsFlow):
             {
                 vol.Required(
                     CONF_UPDATE_INTERVAL,
-                    default=self.config_entry.options.get(
-                        CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
-                    ),
+                    default=self.config_entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
                 ): int
             }
         )
