@@ -38,7 +38,6 @@ class EngieConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # Minimal validation here; real auth happens in coordinator
-            base_url = (user_input.get(CONF_BASE_URL) or DEFAULT_BASE_URL).strip()
             auth_mode = (user_input.get(CONF_AUTH_MODE) or AUTH_MODE_MOBILE).strip()
 
             if auth_mode == AUTH_MODE_MOBILE:
