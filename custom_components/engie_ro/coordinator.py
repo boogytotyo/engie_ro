@@ -39,10 +39,12 @@ class EngieCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER,
             name=f"{DOMAIN}_coordinator",
             update_interval=update_interval or timedelta(seconds=DEFAULT_UPDATE_INTERVAL),
+            config_entry=entry,  # 👈 important pentru async_config_entry_first_refresh
         )
         self.entry = entry
         self.api = api
         self.session = session
+
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:
