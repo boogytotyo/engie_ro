@@ -1,14 +1,13 @@
 {
   "domain": "engie_ro",
   "name": "Engie România",
-  "codeowners": [
-    "@boogytotyo"
-  ],
-  "config_flow": true,
-  "dependencies": [],
+  "version": "2.1.0",
   "documentation": "https://github.com/boogytotyo/engie_ro",
-  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/boogytotyo/engie_ro/issues",
   "requirements": [],
-  "version": "2.0.2"
+  "codeowners": ["@boogytotyo"],
+  "config_flow": true,
+  "iot_class": "cloud_polling",
+  "integration_type": "hub",
+  "loggers": ["custom_components.engie_ro"]
 }
