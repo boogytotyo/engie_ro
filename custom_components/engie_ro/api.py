@@ -59,10 +59,10 @@ class EngieClient:
         h["Device-Id"] = device_id
         return h
 
-    async def _get(self, path: str, params: Dict[str, Any] | None = None) -> Any:
+    async def _get(self, path: str, params: Dict[str, str] | None = None) -> Any:
         s = await self._session_get()
         url = f"{self.base_url}{path}"
-        async with s.get(url, headers=self._headers(), params=params) as r:
+        async with s.get(url, headers=self._headers(), params=params or {}) as r:
             txt = await r.text()
             if r.status == 401:
                 raise EngieUnauthorized(f"GET {path} -> 401: {txt}")
@@ -103,14 +103,18 @@ class EngieClient:
             except Exception:
                 return txt
 
-    async def mobile_login(self, username: str, password: str, device_id: str) -> Tuple[str, str | None, int | None, int | None]:
+    # --- public API calls ---
+
+    async def mobile_login(self, email: str, password: str, device_id: str) -> Tuple[str, str | None, Any, Any]:
         s = await self._session_get()
-        url = f"{self.base_url}/v1/login"
+        url = f"{self.base_url}/v2/login/mobile"
+        payload: Dict[str, Any] = {"email": email, "password": password, "device_id": device_id}
         headers = self._headers_mobile(device_id)
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-        payload = f"username={quote_plus(username)}&password={quote_plus(password)}"
-        async with s.post(url, data=payload, headers=headers) as r:
+        headers["Content-Type"] = "application/json"
+        async with s.post(url, headers=headers, json=payload) as r:
             txt = await r.text()
+            if r.status == 401:
+                raise EngieUnauthorized(f"LOGIN {url} -> 401: {txt}")
             if r.status >= 400:
                 raise EngieHTTPError(f"LOGIN -> {r.status}: {txt}")
             try:
@@ -141,19 +145,13 @@ class EngieClient:
                 raise EngieHTTPError(f"app_status -> {r.status}: {txt}")
             return True
 
-    # Data endpoints
-    async def get_user(self) -> Any:
-        return await self._get("/v1/user/me")
+    # ---- endpoints inferred from prior traffic ----
 
-    async def get_places(self) -> Any:
-        return await self._get("/v1/placesofconsumption")
-
-    async def get_divisions(self, poc_number: str, pa: str | None = None) -> Any:
-        params = {"pa": pa} if pa else None
-        return await self._get(f"/v1/placesofconsumption/divisions/{poc_number}", params=params)
-
-    async def get_index_window(self, poc_number: str, division: str = "gaz", pa: str | None = None, installation_number: str | None = None) -> Any:
-        params: Dict[str, Any] = {"poc_number": poc_number, "division": division}
+    async def get_index(self, poc_number: str, division: str | None = None, pa: str | None = None, installation_number: str | None = None) -> Any:
+        """GET /v1/index/{POC}?division=...&pa=...&installation_number=..."""
+        params: Dict[str, str] = {}
+        if division:
+            params["division"] = division
         if pa:
             params["pa"] = pa
         if installation_number:
@@ -189,7 +187,6 @@ class EngieClient:
         }
         return await self._post_json("/v1/index/history", payload)    
 
-    
     async def get_invoices_history(self, poc_number: str, start_date: str, end_date: str, pa: str | None = None) -> Any:
         """GET /v1/invoices/history-only/{POC}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&pa=PA"""
         params: Dict[str, Any] = {"startDate": start_date, "endDate": end_date}
