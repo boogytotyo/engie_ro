@@ -1,24 +1,26 @@
 {
+  "title": "Engie Romania",
   "config": {
     "step": {
       "user": {
-        "title": "Engie Romania",
-        "description": "Configure the Engie Romania integration",
+        "title": "Sign in to Engie",
+        "description": "Enter your Engie Romania credentials.",
         "data": {
-          "base_url": "Base URL",
-          "auth_mode": "Auth mode",
-          "username": "E-mail",
-          "password": "Password",
-          "device_id": "Device ID",
-          "bearer_token": "Bearer token",
-          "token_file_path": "Token file path"
+          "username": "Email",
+          "password": "Password"
         }
       }
     },
     "error": {
-      "missing_credentials": "Username/Password required",
-      "missing_bearer": "Bearer token required",
-      "invalid_auth_mode": "Invalid authentication mode"
+      "cannot_connect": "Failed to connect to the Engie API.",
+      "invalid_auth": "Invalid credentials.",
+      "server_error": "Server error from Engie (500). Please try again later.",
+      "rate_limited": "Too many requests. Please try again later.",
+      "timeout": "The Engie API timed out.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This account is already configured."
     }
   }
 }
