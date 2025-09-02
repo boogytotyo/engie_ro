@@ -47,17 +47,15 @@ def normalize_billing_history(raw: dict[str, Any]) -> dict[str, Any]:
     items = _first(raw.get("items"), raw.get("data"), [])
     norm_items = []
     for it in items or []:
-        norm_items.append(
-            {
-                "id": _first(it.get("id"), it.get("invoice_id"), it.get("number")),
-                "issue_date": _first(it.get("issue_date"), it.get("date"), it.get("InvoiceDate")),
-                "due_date": _first(it.get("due_date"), it.get("DueDate")),
-                "amount": float(_first(it.get("amount"), it.get("value"), it.get("sum"), 0) or 0),
-                "currency": _first(it.get("currency"), it.get("Currency"), "RON"),
-                "status": (_first(it.get("status"), it.get("Status")) or "").lower() or None,
-                "pdf_url": _first(it.get("pdf_url"), it.get("url_pdf"), it.get("link")),
-            }
-        )
+        norm_items.append({
+            "id": _first(it.get("id"), it.get("invoice_id"), it.get("number")),
+            "issue_date": _first(it.get("issue_date"), it.get("date"), it.get("InvoiceDate")),
+            "due_date": _first(it.get("due_date"), it.get("DueDate")),
+            "amount": float(_first(it.get("amount"), it.get("value"), it.get("sum"), 0) or 0),
+            "currency": _first(it.get("currency"), it.get("Currency"), "RON"),
+            "status": (_first(it.get("status"), it.get("Status")) or "").lower() or None,
+            "pdf_url": _first(it.get("pdf_url"), it.get("url_pdf"), it.get("link")),
+        })
     last = None
     if norm_items:
         last = sorted(

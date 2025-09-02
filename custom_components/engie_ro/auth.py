@@ -8,12 +8,10 @@ from .api import EngieApiClient
 AUTH_MODE_MOBILE = "mobile"
 AUTH_MODE_WEB = "web"
 
-
 @dataclass
 class TokenBundle:
     token: str
     exp_epoch: float | None = None  # unix epoch seconds
-
 
 class AuthManager:
     """Lightweight token manager; supports one mode (email/password) here."""
