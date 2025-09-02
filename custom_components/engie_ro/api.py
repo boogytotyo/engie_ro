@@ -8,17 +8,13 @@ from typing import Any
 from aiohttp import ClientSession, ClientTimeout
 from homeassistant.core import HomeAssistant
 
-from .const import (
-    AuthError,
-    TemporaryApiError,
-    TOKEN_STORAGE_FILE,
-)
+from .const import TOKEN_STORAGE_FILE, AuthError, TemporaryApiError
 
 TIMEOUT = ClientTimeout(total=15)
 
+
 class EngieApiClient:
     """Client HTTP pur, fără dependențe HA în metode."""
-
     def __init__(self, session: ClientSession, base_url: str = "https://gwss.engie.ro"):
         self._session = session
         self._base_url = base_url.rstrip("/")
@@ -84,9 +80,7 @@ class EngieApiClient:
         backoff = 1.5
         for attempt in range(4):
             try:
-                async with self._session.request(
-                    method, url, headers=headers, timeout=TIMEOUT, **kwargs
-                ) as resp:
+                async with self._session.request(method, url, headers=headers, timeout=TIMEOUT, **kwargs) as resp:
                     if resp.status == 401:
                         raise AuthError("Unauthorized (token expired/invalid)")
                     if resp.status in (429, 500, 502, 503, 504):

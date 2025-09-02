@@ -5,26 +5,19 @@ from datetime import timedelta
 from typing import Any
 
 from aiohttp import ClientSession
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import (
-    DOMAIN,
-    CONF_EMAIL,
-    CONF_PASSWORD,
-    DEFAULT_UPDATE_INTERVAL,
-)
 from .api import EngieApiClient
+from .const import CONF_EMAIL, CONF_PASSWORD, DEFAULT_UPDATE_INTERVAL, DOMAIN
 from .const import AuthError, TemporaryApiError
-from .mapping import normalize_overview, normalize_billing_history, normalize_current_index
+from .mapping import normalize_billing_history, normalize_current_index, normalize_overview
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class EngieCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, session: ClientSession, api: EngieApiClient, update_interval: timedelta):
@@ -65,6 +58,7 @@ class EngieCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise UpdateFailed(f"Temporary API error: {exc.status}") from exc
         except Exception as exc:  # noqa: BLE001
             raise UpdateFailed(str(exc)) from exc
+
 
 async def create_coordinator(hass: HomeAssistant, entry: ConfigEntry, update_interval: timedelta) -> EngieCoordinator:
     session = async_get_clientsession(hass)

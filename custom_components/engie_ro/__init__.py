@@ -3,21 +3,16 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
+from homeassistant.const import Platform
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.const import Platform
 
-from .const import (
-    DOMAIN,
-    DEFAULT_UPDATE_INTERVAL,
-    CONF_UPDATE_INTERVAL,
-)
+from .const import CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-type EngieConfigEntry = ConfigEntry
 
-async def async_setup_entry(hass: HomeAssistant, entry: EngieConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     update_interval = int(entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL))
     if update_interval < DEFAULT_UPDATE_INTERVAL:
@@ -31,11 +26,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: EngieConfigEntry) -> boo
     await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR])
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry: EngieConfigEntry) -> bool:
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR])
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok
 
-async def async_reload_entry(hass: HomeAssistant, entry: EngieConfigEntry) -> None:
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)

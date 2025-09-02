@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 from typing import Any
+
 
 def _first(*vals):
     for v in vals:
         if v is not None:
             return v
     return None
+
 
 def normalize_overview(raw: dict[str, Any]) -> dict[str, Any]:
     account = _first(
@@ -39,6 +42,7 @@ def normalize_overview(raw: dict[str, Any]) -> dict[str, Any]:
     }
     return {"pa": account, "poc": poc, "division": division, "customer": customer}
 
+
 def normalize_billing_history(raw: dict[str, Any]) -> dict[str, Any]:
     items = _first(raw.get("items"), raw.get("data"), [])
     norm_items = []
@@ -59,6 +63,7 @@ def normalize_billing_history(raw: dict[str, Any]) -> dict[str, Any]:
             key=lambda x: x.get("issue_date"),
         )[-1]
     return {"items": norm_items, "last": last}
+
 
 def normalize_current_index(raw: dict[str, Any]) -> dict[str, Any]:
     value = _first(raw.get("value"), raw.get("index"), raw.get("reading"))

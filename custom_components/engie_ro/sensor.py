@@ -4,15 +4,16 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.const import UnitOfEnergy
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
 
-from .const import DOMAIN, MANUFACTURER, DEVICE_NAME_FMT
+from .const import DEVICE_NAME_FMT, DOMAIN, MANUFACTURER
 from .coordinator import EngieCoordinator
 
 PARALLEL_UPDATES = 0
+
 
 @dataclass
 class EngieSensorDescription:
@@ -21,10 +22,12 @@ class EngieSensorDescription:
     icon: str | None = None
     native_unit: str | None = None
 
+
 SENSORS: list[EngieSensorDescription] = [
     EngieSensorDescription("current_index.value", "Index curent", icon="mdi:counter", native_unit=UnitOfEnergy.KILO_WATT_HOUR),
     EngieSensorDescription("billing_history.last.amount", "Ultima factură", icon="mdi:receipt-text"),
 ]
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     coordinator: EngieCoordinator = hass.data[DOMAIN][entry.entry_id]
@@ -34,13 +37,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         identifiers={(DOMAIN, f"pa:{pa}")},
         name=DEVICE_NAME_FMT.format(pa=pa),
         manufacturer=MANUFACTURER,
-        configuration_url="https://my.engie.ro/"
+        configuration_url="https://my.engie.ro/",
     )
 
     entities: list[EngieSensor] = []
     for desc in SENSORS:
         entities.append(EngieSensor(coordinator, entry.entry_id, device, desc, pa))
     async_add_entities(entities)
+
 
 class EngieSensor(SensorEntity):
     _attr_should_poll = False
@@ -77,6 +81,7 @@ class EngieSensor(SensorEntity):
             "poc": dig(data, "overview.poc"),
             "division": dig(data, "overview.division"),
         }
+
 
 def dig(data: dict[str, Any], path: str) -> Any:
     cur: Any = data

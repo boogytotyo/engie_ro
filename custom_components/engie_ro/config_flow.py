@@ -4,17 +4,17 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from .api import EngieApiClient
 from .const import (
-    DOMAIN,
     CONF_EMAIL,
     CONF_PASSWORD,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
     MIN_UPDATE_INTERVAL,
 )
-from .api import EngieApiClient
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 STEP_USER = vol.Schema(
     {
@@ -23,6 +23,7 @@ STEP_USER = vol.Schema(
         vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
     }
 )
+
 
 class EngieConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 2
@@ -65,6 +66,7 @@ class EngieConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         return EngieOptionsFlow(config_entry)
+
 
 class EngieOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry):
