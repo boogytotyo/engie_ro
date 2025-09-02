@@ -3,7 +3,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -22,27 +21,31 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
     password = "secret"
 
     # Evităm sesiuni reale + setup real al entry-ului
-    with patch(
-        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
-        return_value=object(),
-    ), patch(
-        "custom_components.engie_ro.config_flow.EngieApiClient.login",
-        new=AsyncMock(),
-    ) as m_login, patch(
-        "custom_components.engie_ro.config_flow.EngieApiClient.save_token",
-        new=AsyncMock(),
-    ), patch(
-        # Nu lăsăm HA să pornească platformele reale după create_entry
-        "homeassistant.config_entries.ConfigEntries.async_forward_entry_setups",
-        new=AsyncMock(),
-    ), patch(
-        # Nici coordinatorul nu vrem să fie creat în testul acesta
-        "custom_components.engie_ro.__init__.create_coordinator",
-        new=AsyncMock(),
+    with (
+        patch(
+            "homeassistant.helpers.aiohttp_client.async_get_clientsession",
+            return_value=object(),
+        ),
+        patch(
+            "custom_components.engie_ro.config_flow.EngieApiClient.login",
+            new=AsyncMock(),
+        ) as m_login,
+        patch(
+            "custom_components.engie_ro.config_flow.EngieApiClient.save_token",
+            new=AsyncMock(),
+        ),
+        patch(
+            # Nu lăsăm HA să pornească platformele reale după create_entry
+            "homeassistant.config_entries.ConfigEntries.async_forward_entry_setups",
+            new=AsyncMock(),
+        ),
+        patch(
+            # Nici coordinatorul nu vrem să fie creat în testul acesta
+            "custom_components.engie_ro.__init__.create_coordinator",
+            new=AsyncMock(),
+        ),
     ):
-        form_result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": "user"}
-        )
+        form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
         assert form_result["type"] == "form"
 
         if login_ok:
