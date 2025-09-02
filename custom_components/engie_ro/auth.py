@@ -1,70 +1,86 @@
 from __future__ import annotations
+import logging, os, json, time, asyncio
+from pathlib import Path
+from .const import DEFAULT_TOKEN_FILE, AUTH_MODE_MOBILE
+from .api import EngieClient, EngieHTTPError, EngieUnauthorized
 
-from typing import Any
+_LOGGER = logging.getLogger(__name__)
 
-import aiohttp
+class EngieAuthManager:
+    def __init__(self, client: EngieClient, username: str | None, password: str | None, token_file: str | None, device_id: str, auth_mode: str, bearer_token: str | None):
+        self.client = client
+        self.username = username
+        self.password = password
+        self.token_path = Path(token_file or DEFAULT_TOKEN_FILE)
+        self.device_id = device_id
+        self.auth_mode = auth_mode
+        self.initial_bearer = (bearer_token or "").strip()
+        self._exp_epoch: float | None = None
 
+    async def _read_token_from_file(self) -> dict | None:
+        try:
+            if not self.token_path.exists():
+                return None
+            txt = await asyncio.to_thread(self.token_path.read_text, encoding="utf-8")
+            txt = txt.strip()
+            if not txt:
+                return None
+            if txt.startswith("{"):
+                return json.loads(txt)
+            return {"token": txt}
+        except Exception as e:
+            _LOGGER.debug("Cannot read token file: %s", e)
+            return None
 
-class EngieAuthError(RuntimeError): ...
+    async def _write_token_to_file(self, bundle: dict) -> None:
+        try:
+            self.token_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.token_path.with_suffix(self.token_path.suffix + ".tmp")
+            await asyncio.to_thread(tmp.write_text, json.dumps(bundle, ensure_ascii=False, indent=0), encoding="utf-8")
+            os.replace(tmp, self.token_path)
+        except Exception as e:
+            _LOGGER.warning("Cannot write token to file %s: %s", self.token_path, e)
 
+    async def _login_mobile(self) -> str:
+        if not self.username or not self.password:
+            raise EngieHTTPError("Missing username/password for mobile login")
+        token, refresh_token, exp_sec, refresh_epoch = await self.client.mobile_login(self.username, self.password, self.device_id)
+        now = time.time()
+        exp_epoch = now + (int(exp_sec) if exp_sec else 3600)
+        self._exp_epoch = exp_epoch
+        bundle = {"token": token, "refresh_token": refresh_token, "exp": exp_sec, "exp_epoch": exp_epoch, "refresh_token_expiration_date": refresh_epoch}
+        await self._write_token_to_file(bundle)
+        self.client.token = token
+        return token
 
-class EngieAuthUnauthorized(EngieAuthError): ...
+    async def ensure_valid_token(self) -> str:
+        if self.initial_bearer:
+            self.client.token = self.initial_bearer
+            return self.initial_bearer
 
+        b = await self._read_token_from_file()
+        if b:
+            tok = b.get("token")
+            if tok:
+                self.client.token = tok
+                self._exp_epoch = b.get("exp_epoch")
+                if isinstance(self._exp_epoch, (int, float)) and time.time() > float(self._exp_epoch) - 120:
+                    if self.auth_mode == AUTH_MODE_MOBILE:
+                        return await self._login_mobile()
+                try:
+                    await self.client.app_status_ok()
+                    return tok
+                except EngieUnauthorized:
+                    pass
+                except Exception:
+                    return tok
 
-class EngieMobileAuth:
-    def __init__(self, base_url: str, session: aiohttp.ClientSession | None = None) -> None:
-        self.base_url = base_url.rstrip("/")
-        self._session = session
+        if self.auth_mode == AUTH_MODE_MOBILE:
+            return await self._login_mobile()
+        else:
+            raise EngieUnauthorized("Bearer token missing/invalid. Provide a valid token or switch to mobile login.")
 
-    async def _session_get(self) -> aiohttp.ClientSession:
-        if self._session is None:
-            self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30))
-        return self._session
-
-    async def close(self) -> None:
-        if self._session:
-            await self._session.close()
-
-    async def login(self, email: str, password: str, device_id: str) -> tuple[str, str, Any, Any]:
-        s = await self._session_get()
-        url = f"{self.base_url}/v2/login/mobile"
-        payload: dict[str, Any] = {
-            "email": (email or "").strip(),
-            "password": (password or "").strip(),
-            "device_id": (device_id or "").strip(),
-        }
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "User-Agent": "okhttp/4.12.0",
-            "source": "android",
-            "Device-Id": (device_id or "").strip(),
-        }
-        async with s.post(url, headers=headers, json=payload) as r:
-            txt = await r.text()
-            if r.status == 401:
-                raise EngieAuthUnauthorized(f"mobile login -> 401: {txt}")
-            if r.status >= 400:
-                raise EngieAuthError(f"mobile login -> {r.status}: {txt}")
-            try:
-                j = await r.json()
-            except Exception as err:
-                raise EngieAuthError(f"mobile login non-JSON: {txt}") from err
-            data = j.get("data") if isinstance(j, dict) else None
-            if not isinstance(data, dict):
-                raise EngieAuthError(f"mobile login unexpected JSON: {j}")
-            token = str(data.get("token") or "").strip()
-            if not token:
-                raise EngieAuthError(f"mobile login: token missing: {j}")
-            refresh_token = (data.get("refresh_token") or "").strip()
-            exp = data.get("exp")
-            refresh_epoch = data.get("refresh_token_expiration_date")
-            return token, refresh_token, exp, refresh_epoch
-
-
-class EngieBearerAuth:
-    def __init__(self, bearer_token: str) -> None:
-        self.bearer = (bearer_token or "").strip()
-
-    def valid(self) -> bool:
-        return bool(self.bearer)
+    async def refresh_after_401(self) -> str:
+        if self.auth_mode == AUTH_MODE_MOBILE:
+            return await self._login_mobile()
+        raise EngieUnauthorized("Bearer token expired/invalid. Update the token in Options.")
