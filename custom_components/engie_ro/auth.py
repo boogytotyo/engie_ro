@@ -42,8 +42,8 @@ class EngieMobileAuth:
                 raise EngieAuthError(f"mobile login -> {r.status}: {txt}")
             try:
                 j = await r.json()
-            except Exception:
-                raise EngieAuthError(f"mobile login non-JSON: {txt}")
+            except Exception as err:
+                raise EngieAuthError(f"mobile login non-JSON: {txt}") from err
             data = j.get("data") if isinstance(j, dict) else None
             if not isinstance(data, dict):
                 raise EngieAuthError(f"mobile login unexpected JSON: {j}")
