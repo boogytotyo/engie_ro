@@ -1,18 +1,20 @@
 from __future__ import annotations
+
+from typing import Any
+
 import aiohttp
-from typing import Any, Dict, Tuple
 
 
-class EngieHTTPError(RuntimeError):
-    ...
+class EngieHTTPError(RuntimeError): ...
 
 
-class EngieUnauthorized(EngieHTTPError):
-    ...
+class EngieUnauthorized(EngieHTTPError): ...
 
 
 class EngieClient:
-    def __init__(self, base_url: str, token: str = "", session: aiohttp.ClientSession | None = None) -> None:
+    def __init__(
+        self, base_url: str, token: str = "", session: aiohttp.ClientSession | None = None
+    ) -> None:
         self.base_url = (base_url or "").strip().rstrip("/")
         self._session = session
         self._token = self._clean(token)
@@ -56,11 +58,11 @@ class EngieClient:
         if self._session:
             await self._session.close()
 
-    def _sanitize_headers(self, headers: Dict[str, str]) -> Dict[str, str]:
+    def _sanitize_headers(self, headers: dict[str, str]) -> dict[str, str]:
         # Remove any CR/LF from all header values.
         return {k: self._clean(v) for k, v in headers.items()}
 
-    def _headers(self) -> Dict[str, str]:
+    def _headers(self) -> dict[str, str]:
         token = self._clean(self._token)
         if not token:
             raise EngieHTTPError("No Bearer token configured.")
@@ -78,12 +80,12 @@ class EngieClient:
         }
         return self._sanitize_headers(headers)
 
-    def _headers_mobile(self, device_id: str) -> Dict[str, str]:
+    def _headers_mobile(self, device_id: str) -> dict[str, str]:
         h = dict(self.android_headers)
         h["Device-Id"] = self._clean(device_id)
         return self._sanitize_headers(h)
 
-    async def _get(self, path: str, params: Dict[str, str] | None = None) -> Any:
+    async def _get(self, path: str, params: dict[str, str] | None = None) -> Any:
         s = await self._session_get()
         url = f"{self.base_url}{self._clean(path)}"
         async with s.get(url, headers=self._headers(), params=params or {}) as r:
@@ -97,7 +99,7 @@ class EngieClient:
             except Exception:
                 return txt
 
-    async def _post_form_json(self, path: str, form: Dict[str, str]) -> Any:
+    async def _post_form_json(self, path: str, form: dict[str, str]) -> Any:
         s = await self._session_get()
         url = f"{self.base_url}{self._clean(path)}"
         async with s.post(url, headers=self._headers(), data=form) as r:
@@ -111,7 +113,7 @@ class EngieClient:
             except Exception:
                 return txt
 
-    async def _post_json(self, path: str, payload: Dict[str, Any]) -> Any:
+    async def _post_json(self, path: str, payload: dict[str, Any]) -> Any:
         s = await self._session_get()
         url = f"{self.base_url}{self._clean(path)}"
         headers = dict(self._headers())
@@ -129,10 +131,12 @@ class EngieClient:
 
     # -------------------- public API calls --------------------
 
-    async def mobile_login(self, email: str, password: str, device_id: str) -> Tuple[str, str | None, Any, Any]:
+    async def mobile_login(
+        self, email: str, password: str, device_id: str
+    ) -> tuple[str, str | None, Any, Any]:
         s = await self._session_get()
         url = f"{self.base_url}/v2/login/mobile"
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "email": self._clean(email),
             "password": self._clean(password),
             "device_id": self._clean(device_id),
@@ -182,7 +186,7 @@ class EngieClient:
         installation_number: str | None = None,
     ) -> Any:
         """GET /v1/index/{POC}?division=...&pa=...&installation_number=..."""
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if self._clean(division):
             params["division"] = self._clean(division)
         if self._clean(pa):
@@ -201,13 +205,19 @@ class EngieClient:
     async def get_invoices_details(self, contract_account: str) -> Any:
         ca = self._clean(contract_account)
         try:
-            return await self._post_form_json("/v1/invoices/ballance-details", {"contract_account[]": ca})
+            return await self._post_form_json(
+                "/v1/invoices/ballance-details", {"contract_account[]": ca}
+            )
         except EngieHTTPError:
-            return await self._post_form_json("/v1/invoices/ballance-details", {"contract_account": ca})
+            return await self._post_form_json(
+                "/v1/invoices/ballance-details", {"contract_account": ca}
+            )
 
-    async def get_consumption(self, poc_number: str, start_date: str, end_date: str, pa: str | None = None) -> Any:
+    async def get_consumption(
+        self, poc_number: str, start_date: str, end_date: str, pa: str | None = None
+    ) -> Any:
         """GET /v1/index/consumption/{POC}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&pa=PA"""
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "startDate": self._clean(start_date),
             "endDate": self._clean(end_date),
         }
@@ -215,7 +225,9 @@ class EngieClient:
             params["pa"] = self._clean(pa)
         return await self._get(f"/v1/index/consumption/{self._clean(poc_number)}", params=params)
 
-    async def get_index_history_post(self, autocit: str, poc_number: str, division: str, start_date: str) -> Any:
+    async def get_index_history_post(
+        self, autocit: str, poc_number: str, division: str, start_date: str
+    ) -> Any:
         """POST /v1/index/history with JSON body."""
         payload = {
             "autocit": self._clean(autocit),
@@ -225,12 +237,16 @@ class EngieClient:
         }
         return await self._post_json("/v1/index/history", payload)
 
-    async def get_invoices_history(self, poc_number: str, start_date: str, end_date: str, pa: str | None = None) -> Any:
+    async def get_invoices_history(
+        self, poc_number: str, start_date: str, end_date: str, pa: str | None = None
+    ) -> Any:
         """GET /v1/invoices/history-only/{POC}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&pa=PA"""
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "startDate": self._clean(start_date),
             "endDate": self._clean(end_date),
         }
         if self._clean(pa):
             params["pa"] = self._clean(pa)
-        return await self._get(f"/v1/invoices/history-only/{self._clean(poc_number)}", params=params)
+        return await self._get(
+            f"/v1/invoices/history-only/{self._clean(poc_number)}", params=params
+        )
