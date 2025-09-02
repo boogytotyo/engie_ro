@@ -22,8 +22,11 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
     form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     assert form_result["type"] == "form"
 
-    with patch("custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()) as m_login, patch(
-        "custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()
+    with (
+        patch(
+            "custom_components.engie_ro.config_flow.EngieApiClient.login", new=AsyncMock()
+        ) as m_login,
+        patch("custom_components.engie_ro.config_flow.EngieApiClient.save_token", new=AsyncMock()),
     ):
         if login_ok:
             m_login.return_value = "TOK"
@@ -35,7 +38,9 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
             CONF_PASSWORD: password,
             CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
         }
-        result = await hass.config_entries.flow.async_configure(form_result["flow_id"], user_input=user_input)
+        result = await hass.config_entries.flow.async_configure(
+            form_result["flow_id"], user_input=user_input
+        )
 
     if login_ok:
         assert result["type"] == "create_entry"
@@ -62,6 +67,8 @@ async def test_options_flow(hass: HomeAssistant):
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == "form"
 
-    result2 = await hass.config_entries.options.async_configure(result["flow_id"], user_input={CONF_UPDATE_INTERVAL: 777})
+    result2 = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_UPDATE_INTERVAL: 777}
+    )
     assert result2["type"] == "create_entry"
     assert result2["data"][CONF_UPDATE_INTERVAL] == 777

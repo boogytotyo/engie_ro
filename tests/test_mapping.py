@@ -25,8 +25,24 @@ def test_normalize_overview_variants():
 def test_normalize_billing_history_list_and_last():
     raw = {
         "data": [
-            {"invoice_id": "A1", "InvoiceDate": "2025-05-01", "DueDate": "2025-05-20", "value": "101.5", "Currency": "RON", "Status": "UNPAID", "url_pdf": "http://pdf/1"},
-            {"invoice_id": "A2", "InvoiceDate": "2025-06-01", "DueDate": "2025-06-20", "value": 99.99, "Currency": "RON", "Status": "PAID", "url_pdf": "http://pdf/2"},
+            {
+                "invoice_id": "A1",
+                "InvoiceDate": "2025-05-01",
+                "DueDate": "2025-05-20",
+                "value": "101.5",
+                "Currency": "RON",
+                "Status": "UNPAID",
+                "url_pdf": "http://pdf/1",
+            },
+            {
+                "invoice_id": "A2",
+                "InvoiceDate": "2025-06-01",
+                "DueDate": "2025-06-20",
+                "value": 99.99,
+                "Currency": "RON",
+                "Status": "PAID",
+                "url_pdf": "http://pdf/2",
+            },
         ]
     }
     out = normalize_billing_history(raw)
