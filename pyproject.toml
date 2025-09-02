@@ -8,11 +8,15 @@ line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
+# Reguli principale: erori, importuri, bugbear, upgrade (pyupgrade)
 select = ["E", "F", "I", "B", "UP"]
+# Lăsăm E501 (line too long) ignorat — formatăm cu Black
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
+# Ajută la sortarea corectă a importurilor din integrarea ta
 known-first-party = ["custom_components.engie_ro"]
 
 [tool.ruff.format]
+# Formatterul Ruff pe docstring code blocks
 docstring-code-format = true
