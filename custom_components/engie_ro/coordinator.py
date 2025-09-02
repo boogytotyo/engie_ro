@@ -1,34 +1,34 @@
 from __future__ import annotations
-import aiohttp
-import asyncio
-import json
+
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Tuple
+from datetime import timedelta
+from typing import Any
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
+from .api import EngieClient, EngieUnauthorized
+from .auth import EngieMobileAuth
 from .const import (
-    DOMAIN,
+    AUTH_MODE_MOBILE,
+    CONF_AUTH_MODE,
     CONF_BASE_URL,
-    CONF_USERNAME,
+    CONF_BEARER_TOKEN,
+    CONF_DEVICE_ID,
     CONF_PASSWORD,
     CONF_TOKEN_FILE,
-    CONF_DEVICE_ID,
-    CONF_AUTH_MODE,
-    CONF_BEARER_TOKEN,
+    CONF_USERNAME,
     DEFAULT_BASE_URL,
     DEFAULT_TOKEN_FILE,
-    AUTH_MODE_MOBILE,
-    AUTH_MODE_BEARER,
+    DOMAIN,
     UPDATE_INTERVAL_SEC,
 )
-from .api import EngieClient, EngieHTTPError, EngieUnauthorized
-from .auth import EngieMobileAuth
 
 LOGGER = logging.getLogger(__name__)
+
 
 @dataclass
 class EngieTokens:
@@ -37,9 +37,12 @@ class EngieTokens:
     exp: Any | None
     refresh_epoch: Any | None
 
-class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
+
+class EngieDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        super().__init__(hass, LOGGER, name=DOMAIN, update_interval=timedelta(seconds=UPDATE_INTERVAL_SEC))
+        super().__init__(
+            hass, LOGGER, name=DOMAIN, update_interval=timedelta(seconds=UPDATE_INTERVAL_SEC)
+        )
         self.entry = entry
         self._session: aiohttp.ClientSession | None = None
         self._client: EngieClient | None = None
@@ -59,7 +62,7 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
     async def _load_token_file(self) -> str | None:
         try:
-            with open(self._token_file, "r", encoding="utf-8") as f:
+            with open(self._token_file, encoding="utf-8") as f:
                 return f.read().strip()
         except Exception:
             return None
@@ -86,13 +89,15 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         if token:
             return
         auth = EngieMobileAuth(self._base_url, session=await self._session_get())
-        token, refresh, exp, refresh_epoch = await auth.login(self._username, self._password, self._device_id or "device")
+        token, refresh, exp, refresh_epoch = await auth.login(
+            self._username, self._password, self._device_id or "device"
+        )
         await auth.close()
         await self._save_token_file(token)
         # also update client
         self._client = EngieClient(self._base_url, token=token, session=await self._session_get())
 
-    async def _async_update(self) -> Dict[str, Any]:
+    async def _async_update(self) -> dict[str, Any]:
         """Core fetch logic called by coordinator."""
         await self._login_mobile_if_needed()
         client = await self._ensure_client()
@@ -110,7 +115,7 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 raise
 
         # Placeholder for actual data fetch flows; keep keys stable for sensors
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "user": {},
             "contracts": {},
             "indexes": {},
@@ -128,5 +133,5 @@ class EngieDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         return data
 
-    async def _async_update_data(self) -> Dict[str, Any]:
+    async def _async_update_data(self) -> dict[str, Any]:
         return await self._async_update()

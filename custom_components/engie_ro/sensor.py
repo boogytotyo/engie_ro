@@ -1,10 +1,13 @@
 from __future__ import annotations
-from typing import Any, Dict
+
+from typing import Any
+
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
-from .const import DOMAIN, ATTRIBUTION
+
+from .const import ATTRIBUTION, DOMAIN
 from .coordinator import EngieDataCoordinator
 
 SENSOR_KEY_USER = "user"
@@ -23,10 +26,12 @@ SENSORS = [
     SENSOR_KEY_INVOICES,
 ]
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     coord: EngieDataCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities: list[EngieSensor] = [EngieSensor(coord, key) for key in SENSORS]
     async_add_entities(entities)
+
 
 class EngieSensor(SensorEntity):
     _attr_has_entity_name = True
@@ -60,7 +65,7 @@ class EngieSensor(SensorEntity):
         return value
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         data = self._coordinator.data or {}
         val = data.get(self._key)
         if isinstance(val, dict | list):
