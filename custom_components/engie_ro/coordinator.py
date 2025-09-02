@@ -12,15 +12,28 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import EngieApiClient
-from .const import CONF_EMAIL, CONF_PASSWORD, DEFAULT_UPDATE_INTERVAL, DOMAIN
-from .const import AuthError, TemporaryApiError
+from .const import (
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
+    AuthError,
+    TemporaryApiError,
+)
 from .mapping import normalize_billing_history, normalize_current_index, normalize_overview
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class EngieCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, session: ClientSession, api: EngieApiClient, update_interval: timedelta):
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        session: ClientSession,
+        api: EngieApiClient,
+        update_interval: timedelta,
+    ):
         super().__init__(
             hass,
             _LOGGER,
@@ -43,7 +56,9 @@ class EngieCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             current_index_raw = await self.api.fetch_current_index(poc, division)
             current_index = normalize_current_index(current_index_raw)
 
-            history_raw = await self.api.fetch_billing_history(pa, division, start_date="2022-01-01")
+            history_raw = await self.api.fetch_billing_history(
+                pa, division, start_date="2022-01-01"
+            )
             billing_history = normalize_billing_history(history_raw)
 
             return {
@@ -60,7 +75,9 @@ class EngieCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise UpdateFailed(str(exc)) from exc
 
 
-async def create_coordinator(hass: HomeAssistant, entry: ConfigEntry, update_interval: timedelta) -> EngieCoordinator:
+async def create_coordinator(
+    hass: HomeAssistant, entry: ConfigEntry, update_interval: timedelta
+) -> EngieCoordinator:
     session = async_get_clientsession(hass)
     api = EngieApiClient(session=session)
 

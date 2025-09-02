@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
@@ -35,7 +34,9 @@ class EngieUpdateEntity(UpdateEntity):
 
         # Citește versiunea din manifest (best-effort)
         try:
-            manifest_path = os.path.join(hass.config.path(), "custom_components", "engie_ro", "manifest.json")
+            manifest_path = os.path.join(
+                hass.config.path(), "custom_components", "engie_ro", "manifest.json"
+            )
             if os.path.exists(manifest_path):
                 with open(manifest_path, encoding="utf-8") as f:
                     self._installed_version = json.load(f).get("version")
@@ -56,7 +57,9 @@ class EngieUpdateEntity(UpdateEntity):
         timeout = aiohttp.ClientTimeout(total=10)
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(url, headers={"Accept": "application/vnd.github+json"}) as resp:
+                async with session.get(
+                    url, headers={"Accept": "application/vnd.github+json"}
+                ) as resp:
                     if resp.status != 200:
                         return
                     data: dict[str, Any] = await resp.json()

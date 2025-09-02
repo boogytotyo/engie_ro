@@ -15,6 +15,7 @@ TIMEOUT = ClientTimeout(total=15)
 
 class EngieApiClient:
     """Client HTTP pur, fără dependențe HA în metode."""
+
     def __init__(self, session: ClientSession, base_url: str = "https://gwss.engie.ro"):
         self._session = session
         self._base_url = base_url.rstrip("/")
@@ -37,7 +38,9 @@ class EngieApiClient:
             return None
 
     @classmethod
-    async def save_token(cls, hass: HomeAssistant, token: str, meta: dict[str, Any] | None = None) -> None:
+    async def save_token(
+        cls, hass: HomeAssistant, token: str, meta: dict[str, Any] | None = None
+    ) -> None:
         path = cls._token_path(hass)
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {"token": token, "meta": meta or {}}
@@ -80,7 +83,9 @@ class EngieApiClient:
         backoff = 1.5
         for attempt in range(4):
             try:
-                async with self._session.request(method, url, headers=headers, timeout=TIMEOUT, **kwargs) as resp:
+                async with self._session.request(
+                    method, url, headers=headers, timeout=TIMEOUT, **kwargs
+                ) as resp:
                     if resp.status == 401:
                         raise AuthError("Unauthorized (token expired/invalid)")
                     if resp.status in (429, 500, 502, 503, 504):
@@ -100,7 +105,9 @@ class EngieApiClient:
         data = await self._request_json("GET", url)
         return data
 
-    async def fetch_billing_history(self, pa: str, division: str, start_date: str) -> dict[str, Any]:
+    async def fetch_billing_history(
+        self, pa: str, division: str, start_date: str
+    ) -> dict[str, Any]:
         url = f"{self._base_url}/myservices/v1/billing/history"
         payload = {"pa": pa, "division": division, "start_date": start_date}
         return await self._request_json("POST", url, json=payload)
