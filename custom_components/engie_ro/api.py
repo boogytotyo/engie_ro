@@ -119,8 +119,8 @@ class EngieClient:
                 raise EngieHTTPError(f"LOGIN -> {r.status}: {txt}")
             try:
                 j = await r.json()
-            except Exception:
-                raise EngieHTTPError(f"LOGIN: non-JSON response: {txt}")
+            except Exception as err:
+                raise EngieHTTPError(f"LOGIN: non-JSON response: {txt}") from err
             data = j.get("data") if isinstance(j, dict) else None
             if not isinstance(data, dict):
                 raise EngieHTTPError(f"LOGIN: unexpected JSON: {j}")
@@ -185,7 +185,7 @@ class EngieClient:
             "division": str(division),
             "start_date": str(start_date),
         }
-        return await self._post_json("/v1/index/history", payload)    
+        return await self._post_json("/v1/index/history", payload)
 
     async def get_invoices_history(self, poc_number: str, start_date: str, end_date: str, pa: str | None = None) -> Any:
         """GET /v1/invoices/history-only/{POC}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&pa=PA"""
