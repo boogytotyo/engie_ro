@@ -3,19 +3,24 @@
   "config": {
     "step": {
       "user": {
-        "title": "Autentificare",
-        "description": "Introdu email/parola sau un token (Bearer).",
+        "title": "Autentificare Engie",
+        "description": "Introdu datele tale de autentificare Engie România.",
         "data": {
-          "email": "Email",
-          "password": "Parolă",
-          "token": "Token (avansat)"
+          "username": "Email",
+          "password": "Parola"
         }
       }
     },
     "error": {
-      "invalid_auth": "Completează email+parolă sau token.",
-      "cannot_connect": "Nu se poate conecta la API.",
-      "unknown": "Eroare necunoscută."
+      "cannot_connect": "Conectarea la API-ul Engie a eșuat.",
+      "invalid_auth": "Date de autentificare invalide.",
+      "server_error": "Eroare server Engie (500). Încearcă mai târziu.",
+      "rate_limited": "Prea multe cereri. Încearcă mai târziu.",
+      "timeout": "Timp de răspuns depășit pentru API-ul Engie.",
+      "unknown": "Eroare neașteptată."
+    },
+    "abort": {
+      "already_configured": "Acest cont este deja configurat."
     }
   }
 }
