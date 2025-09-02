@@ -35,8 +35,12 @@ class EngieDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             user_details = await self._client.get_user_details()
             invoices = await self._client.get_invoices()
             unpaid = await self._client.get_unpaid_invoices()
-            index_window = await self._client.get_index_window()  # perioada și posibilitatea raportării
-            index_history = await self._client.get_index_history()  # listă cu (start, end, index, consum)
+            index_window = (
+                await self._client.get_index_window()
+            )  # perioada și posibilitatea raportării
+            index_history = (
+                await self._client.get_index_history()
+            )  # listă cu (start, end, index, consum)
 
             return {
                 "user_details": user_details,
