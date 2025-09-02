@@ -1,15 +1,9 @@
 from __future__ import annotations
-
-from typing import Any
-
 import aiohttp
-
+from typing import Any, Dict, Tuple
 
 class EngieAuthError(RuntimeError): ...
-
-
 class EngieAuthUnauthorized(EngieAuthError): ...
-
 
 class EngieMobileAuth:
     def __init__(self, base_url: str, session: aiohttp.ClientSession | None = None) -> None:
@@ -25,19 +19,20 @@ class EngieMobileAuth:
         if self._session:
             await self._session.close()
 
-    async def login(self, email: str, password: str, device_id: str) -> tuple[str, str, Any, Any]:
-        """
-        Mobile login — returns (token, refresh_token, exp, refresh_exp_epoch)
-        """
+    async def login(self, email: str, password: str, device_id: str) -> Tuple[str, str, Any, Any]:
         s = await self._session_get()
         url = f"{self.base_url}/v2/login/mobile"
-        payload: dict[str, Any] = {"email": email, "password": password, "device_id": device_id}
+        payload: Dict[str, Any] = {
+            "email": (email or "").strip(),
+            "password": (password or "").strip(),
+            "device_id": (device_id or "").strip(),
+        }
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
             "User-Agent": "okhttp/4.12.0",
             "source": "android",
-            "Device-Id": device_id,
+            "Device-Id": (device_id or "").strip(),
         }
         async with s.post(url, headers=headers, json=payload) as r:
             txt = await r.text()
@@ -52,18 +47,15 @@ class EngieMobileAuth:
             data = j.get("data") if isinstance(j, dict) else None
             if not isinstance(data, dict):
                 raise EngieAuthError(f"mobile login unexpected JSON: {j}")
-            token = str(data.get("token") or "")
+            token = str(data.get("token") or "").strip()
             if not token:
                 raise EngieAuthError(f"mobile login: token missing: {j}")
-            refresh_token = data.get("refresh_token")
+            refresh_token = (data.get("refresh_token") or "").strip()
             exp = data.get("exp")
             refresh_epoch = data.get("refresh_token_expiration_date")
             return token, refresh_token, exp, refresh_epoch
 
-
 class EngieBearerAuth:
-    """When user pastes an already-obtained Bearer token."""
-
     def __init__(self, bearer_token: str) -> None:
         self.bearer = (bearer_token or "").strip()
 
