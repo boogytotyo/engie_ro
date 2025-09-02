@@ -122,7 +122,6 @@ class EngieConsumSensor(BaseEngieSensor):
 
         # grupare pe luni
         by_month = group_by_month(out)
-        keys = sorted(by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True)[:12]
         luni = [
             "ianuarie",
             "februarie",
@@ -142,7 +141,10 @@ class EngieConsumSensor(BaseEngieSensor):
             return f"{x:.2f}".replace(".", ",") + " lei"
 
         total = 0.0
-        for (y, m), values in by_month.items():
+        for (y, m) in sorted(
+            by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True
+        )[:12]:
+            values = by_month[(y, m)]
             s = sum(v["amount"] for v in values if v.get("amount"))
             total += s
             luna = luni[m - 1] if 1 <= m <= 12 else str(m)
