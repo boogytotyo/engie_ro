@@ -81,8 +81,9 @@ async def test_coordinator_happy_path(hass: HomeAssistant, entry: MockConfigEntr
             ),
         ),
     ):
-        coord = await create_coordinator(hass, entry, timedelta(seconds=10))
-        await coord.async_config_entry_first_refresh()
+    coord = await create_coordinator(hass, entry, timedelta(seconds=10))
+    await coord.async_refresh()
+    assert coord.last_update_success
 
     assert coord.data["overview"]["pa"] == "123"
     assert coord.data["overview"]["poc"] == "5001"
