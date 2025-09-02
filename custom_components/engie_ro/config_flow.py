@@ -1,78 +1,88 @@
 from __future__ import annotations
+
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-import voluptuous as vol
-import uuid
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .api import EngieApiClient
 from .const import (
-    DOMAIN, CONF_BASE_URL, CONF_USERNAME, CONF_PASSWORD, CONF_TOKEN_FILE, CONF_DEVICE_ID,
-    CONF_AUTH_MODE, AUTH_MODE_MOBILE, AUTH_MODE_BEARER, CONF_BEARER_TOKEN,
-    DEFAULT_BASE_URL, DEFAULT_TOKEN_FILE,
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    CONF_UPDATE_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
+    MIN_UPDATE_INTERVAL,
 )
 
-AUTH_MODES = [AUTH_MODE_MOBILE, AUTH_MODE_BEARER]
+STEP_USER = vol.Schema(
+    {
+        vol.Required(CONF_EMAIL): str,
+        vol.Required(CONF_PASSWORD): str,
+        vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
+    }
+)
 
 
-def _map_engie_error(exc) -> str:
-    code = getattr(exc, "status", None) or getattr(exc, "status_code", None)
-    if code == 401:
-        return "invalid_auth"
-    if code in (403,):
-        return "invalid_auth"
-    if code in (429,):
-        return "rate_limited"
-    if code in (500, 502, 503, 504):
-        return "server_error"
-    if code in (408,):
-        return "timeout"
-    return "cannot_connect"
-
-
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+class EngieConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    VERSION = 2
 
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
-        if user_input is not None:
-            await self.async_set_unique_id(DOMAIN)
-            self._abort_if_unique_id_configured()
-            user_input[CONF_DEVICE_ID] = user_input.get(CONF_DEVICE_ID) or "ha-" + uuid.uuid4().hex[:12]
-            return self.async_create_entry(title="Engie România", data=user_input)
+        if user_input is None:
+            return self.async_show_form(step_id="user", data_schema=STEP_USER)
 
-        schema = vol.Schema({
-            vol.Required(CONF_AUTH_MODE, default=AUTH_MODE_MOBILE): vol.In(AUTH_MODES),
-            vol.Optional(CONF_USERNAME): str,
-            vol.Optional(CONF_PASSWORD): str,
-            vol.Optional(CONF_BEARER_TOKEN): str,
-            vol.Optional(CONF_TOKEN_FILE, default=DEFAULT_TOKEN_FILE): str,
-            vol.Optional(CONF_BASE_URL, default=DEFAULT_BASE_URL): str,
-        })
-        return self.async_show_form(step_id="user", data_schema=schema)
+        errors: dict[str, str] = {}
+        email = user_input[CONF_EMAIL].strip()
+        password = user_input[CONF_PASSWORD]
+        update_interval = max(int(user_input[CONF_UPDATE_INTERVAL]), MIN_UPDATE_INTERVAL)
+
+        session = async_get_clientsession(self.hass)
+        api = EngieApiClient(session)
+        try:
+            token = await api.login(email, password)
+            await EngieApiClient.save_token(self.hass, token, meta={"source": "config_flow"})
+        except Exception as exc:  # noqa: BLE001
+            msg = str(exc).lower()
+            if "invalid" in msg or "credential" in msg or "401" in msg:
+                errors["base"] = "invalid_auth"
+            elif "timeout" in msg or "temporary" in msg:
+                errors["base"] = "cannot_connect"
+            else:
+                errors["base"] = "unknown"
+            return self.async_show_form(step_id="user", data_schema=STEP_USER, errors=errors)
+
+        await self.async_set_unique_id(f"{DOMAIN}:{email.lower()}")
+        self._abort_if_unique_id_configured()
+
+        data = {
+            CONF_EMAIL: email,
+            CONF_PASSWORD: password,
+        }
+        options = {CONF_UPDATE_INTERVAL: update_interval}
+        return self.async_create_entry(title=f"Engie ({email})", data=data, options=options)
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-        return OptionsFlowHandler(config_entry)
+    def async_get_options_flow(config_entry):
+        return EngieOptionsFlow(config_entry)
 
-class OptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, entry: config_entries.ConfigEntry) -> None:
-        self.entry = entry
+
+class EngieOptionsFlow(config_entries.OptionsFlow):
+    def __init__(self, config_entry):
+        self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
         if user_input is not None:
-            new_data = dict(self.entry.data)
-            for key in (CONF_AUTH_MODE, CONF_USERNAME, CONF_PASSWORD, CONF_BEARER_TOKEN, CONF_TOKEN_FILE, CONF_BASE_URL):
-                if key in user_input and user_input[key] is not None:
-                    new_data[key] = user_input[key]
-            self.hass.config_entries.async_update_entry(self.entry, data=new_data, options={})
-            return self.async_create_entry(title="", data={})
+            update_interval = max(int(user_input[CONF_UPDATE_INTERVAL]), MIN_UPDATE_INTERVAL)
+            return self.async_create_entry(title="", data={CONF_UPDATE_INTERVAL: update_interval})
 
-        d = self.entry.data
-        schema = vol.Schema({
-            vol.Required(CONF_AUTH_MODE, default=d.get(CONF_AUTH_MODE) or AUTH_MODE_MOBILE): vol.In(AUTH_MODES),
-            vol.Optional(CONF_USERNAME, default=d.get(CONF_USERNAME, "")): str,
-            vol.Optional(CONF_PASSWORD, default=d.get(CONF_PASSWORD, "")): str,
-            vol.Optional(CONF_BEARER_TOKEN, default=d.get(CONF_BEARER_TOKEN, "")): str,
-            vol.Optional(CONF_TOKEN_FILE, default=d.get(CONF_TOKEN_FILE, DEFAULT_TOKEN_FILE)): str,
-            vol.Optional(CONF_BASE_URL, default=d.get(CONF_BASE_URL, DEFAULT_BASE_URL)): str,
-        })
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_UPDATE_INTERVAL,
+                    default=self.config_entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+                ): int
+            }
+        )
         return self.async_show_form(step_id="init", data_schema=schema)
