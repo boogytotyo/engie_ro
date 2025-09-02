@@ -1,26 +1,24 @@
 {
-  "title": "Engie Rumänien",
   "config": {
     "step": {
       "user": {
-        "title": "Bei Engie anmelden",
-        "description": "Gib deine Engie Rumänien Zugangsdaten ein.",
+        "title": "Engie Romania",
+        "description": "Konfigurieren Sie die Engie Romania Integration",
         "data": {
+          "base_url": "Basis-URL",
+          "auth_mode": "Authentifizierungsmodus",
           "username": "E-Mail",
-          "password": "Passwort"
+          "password": "Passwort",
+          "device_id": "Geräte-ID",
+          "bearer_token": "Bearer-Token",
+          "token_file_path": "Pfad zur Token-Datei"
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung zur Engie-API fehlgeschlagen.",
-      "invalid_auth": "Ungültige Anmeldedaten.",
-      "server_error": "Serverfehler bei Engie (500). Bitte später erneut versuchen.",
-      "rate_limited": "Zu viele Anfragen. Bitte später erneut versuchen.",
-      "timeout": "Zeitüberschreitung bei der Engie-API.",
-      "unknown": "Unerwarteter Fehler."
-    },
-    "abort": {
-      "already_configured": "Dieses Konto ist bereits konfiguriert."
+      "missing_credentials": "Benutzername/Passwort erforderlich",
+      "missing_bearer": "Bearer-Token erforderlich",
+      "invalid_auth_mode": "Ungültiger Authentifizierungsmodus"
     }
   }
 }
