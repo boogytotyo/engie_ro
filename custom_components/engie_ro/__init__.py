@@ -9,7 +9,6 @@ from homeassistant.const import Platform
 
 from .const import (
     DOMAIN,
-    PLATFORMS,
     DEFAULT_UPDATE_INTERVAL,
     CONF_UPDATE_INTERVAL,
 )
