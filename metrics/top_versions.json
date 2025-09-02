@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-09-02T16:04:44.722Z",
+  "generated_at": "2025-09-02T16:15:09.699Z",
   "top": [
     {
       "tag": "v2.0.2",
@@ -67,7 +67,7 @@
       "tag": "2.0.4",
       "name": "2.0.4",
       "prerelease": false,
-      "published_at": "2025-09-02T16:04:37Z",
+      "published_at": "2025-09-02T16:15:01Z",
       "downloads": 0,
       "assets": [
         {
