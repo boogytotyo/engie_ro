@@ -2,23 +2,28 @@
   "config": {
     "step": {
       "user": {
-        "title": "Engie Romania",
-        "description": "Configure the Engie Romania integration",
+        "title": "Connect to Engie",
+        "description": "Sign in with your Engie account.",
         "data": {
-          "base_url": "Base URL",
-          "auth_mode": "Auth mode",
-          "username": "E-mail",
+          "email": "Email",
           "password": "Password",
-          "device_id": "Device ID",
-          "bearer_token": "Bearer token",
-          "token_file_path": "Token file path"
+          "update_interval": "Update interval (seconds)"
         }
       }
     },
     "error": {
-      "missing_credentials": "Username/Password required",
-      "missing_bearer": "Bearer token required",
-      "invalid_auth_mode": "Invalid authentication mode"
+      "invalid_auth": "Invalid credentials.",
+      "cannot_connect": "Cannot connect right now. Try again later.",
+      "unknown": "Unexpected error."
+    },
+    "options": {
+      "step": {
+        "init": {
+          "data": {
+            "update_interval": "Update interval (seconds)"
+          }
+        }
+      }
     }
   }
 }

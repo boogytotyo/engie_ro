@@ -1,70 +1,86 @@
 from __future__ import annotations
 
-from typing import Any
-
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
-    AUTH_MODE_BEARER,
-    AUTH_MODE_MOBILE,
-    CONF_AUTH_MODE,
-    CONF_BASE_URL,
-    CONF_BEARER_TOKEN,
-    CONF_DEVICE_ID,
-    CONF_PASSWORD,
-    CONF_TOKEN_FILE,
-    CONF_USERNAME,
-    DEFAULT_BASE_URL,
-    DEFAULT_TOKEN_FILE,
     DOMAIN,
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    CONF_UPDATE_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL,
+    MIN_UPDATE_INTERVAL,
+)
+from .api import EngieApiClient
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+STEP_USER = vol.Schema(
+    {
+        vol.Required(CONF_EMAIL): str,
+        vol.Required(CONF_PASSWORD): str,
+        vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
+    }
 )
 
-
 class EngieConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+    VERSION = 2
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None):
+    async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
+        if user_input is None:
+            return self.async_show_form(step_id="user", data_schema=STEP_USER)
+
         errors: dict[str, str] = {}
+        email = user_input[CONF_EMAIL].strip()
+        password = user_input[CONF_PASSWORD]
+        update_interval = max(int(user_input[CONF_UPDATE_INTERVAL]), MIN_UPDATE_INTERVAL)
+
+        session = async_get_clientsession(self.hass)
+        api = EngieApiClient(session)
+        try:
+            token = await api.login(email, password)
+            await EngieApiClient.save_token(self.hass, token, meta={"source": "config_flow"})
+        except Exception as exc:  # noqa: BLE001
+            msg = str(exc).lower()
+            if "invalid" in msg or "credential" in msg or "401" in msg:
+                errors["base"] = "invalid_auth"
+            elif "timeout" in msg or "temporary" in msg:
+                errors["base"] = "cannot_connect"
+            else:
+                errors["base"] = "unknown"
+            return self.async_show_form(step_id="user", data_schema=STEP_USER, errors=errors)
+
+        await self.async_set_unique_id(f"{DOMAIN}:{email.lower()}")
+        self._abort_if_unique_id_configured()
+
+        data = {
+            CONF_EMAIL: email,
+            CONF_PASSWORD: password,
+        }
+        options = {CONF_UPDATE_INTERVAL: update_interval}
+        return self.async_create_entry(title=f"Engie ({email})", data=data, options=options)
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return EngieOptionsFlow(config_entry)
+
+class EngieOptionsFlow(config_entries.OptionsFlow):
+    def __init__(self, config_entry):
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
+        if user_input is not None:
+            update_interval = max(int(user_input[CONF_UPDATE_INTERVAL]), MIN_UPDATE_INTERVAL)
+            return self.async_create_entry(title="", data={CONF_UPDATE_INTERVAL: update_interval})
 
         schema = vol.Schema(
             {
-                vol.Optional(CONF_BASE_URL, default=DEFAULT_BASE_URL): str,
-                vol.Optional(CONF_AUTH_MODE, default=AUTH_MODE_MOBILE): vol.In(
-                    [AUTH_MODE_MOBILE, AUTH_MODE_BEARER]
-                ),
-                vol.Optional(CONF_USERNAME, default=""): str,
-                vol.Optional(CONF_PASSWORD, default=""): str,
-                vol.Optional(CONF_DEVICE_ID, default=""): str,
-                vol.Optional(CONF_BEARER_TOKEN, default=""): str,
-                vol.Optional(CONF_TOKEN_FILE, default=DEFAULT_TOKEN_FILE): str,
+                vol.Required(
+                    CONF_UPDATE_INTERVAL,
+                    default=self.config_entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+                ): int
             }
         )
-
-        if user_input is not None:
-            # Normalize values (strip)
-            normalized = {
-                CONF_BASE_URL: (user_input.get(CONF_BASE_URL) or DEFAULT_BASE_URL).strip(),
-                CONF_AUTH_MODE: (user_input.get(CONF_AUTH_MODE) or AUTH_MODE_MOBILE).strip(),
-                CONF_USERNAME: (user_input.get(CONF_USERNAME) or "").strip(),
-                CONF_PASSWORD: (user_input.get(CONF_PASSWORD) or "").strip(),
-                CONF_DEVICE_ID: (user_input.get(CONF_DEVICE_ID) or "").strip(),
-                CONF_BEARER_TOKEN: (user_input.get(CONF_BEARER_TOKEN) or "").strip(),
-                CONF_TOKEN_FILE: (user_input.get(CONF_TOKEN_FILE) or DEFAULT_TOKEN_FILE).strip(),
-            }
-
-            auth_mode = normalized[CONF_AUTH_MODE]
-
-            if auth_mode == AUTH_MODE_MOBILE:
-                if not normalized[CONF_USERNAME] or not normalized[CONF_PASSWORD]:
-                    errors["base"] = "missing_credentials"
-            elif auth_mode == AUTH_MODE_BEARER:
-                if not normalized[CONF_BEARER_TOKEN]:
-                    errors["base"] = "missing_bearer"
-            else:
-                errors["base"] = "invalid_auth_mode"
-
-            if not errors:
-                return self.async_create_entry(title="Engie România", data=normalized)
-
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+        return self.async_show_form(step_id="init", data_schema=schema)

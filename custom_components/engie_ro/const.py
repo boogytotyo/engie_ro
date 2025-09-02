@@ -1,18 +1,30 @@
+from __future__ import annotations
+
 DOMAIN = "engie_ro"
-
-CONF_BASE_URL = "base_url"
-CONF_USERNAME = "username"
+PLATFORMS = ["sensor"]
+CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
-CONF_TOKEN_FILE = "token_file_path"
-CONF_DEVICE_ID = "device_id"
-CONF_AUTH_MODE = "auth_mode"
-CONF_BEARER_TOKEN = "bearer_token"
+CONF_UPDATE_INTERVAL = "update_interval"  # seconds
 
-AUTH_MODE_MOBILE = "mobile_login"
-AUTH_MODE_BEARER = "bearer"
+DEFAULT_UPDATE_INTERVAL = 1800  # 30 min
+MIN_UPDATE_INTERVAL = 300       # 5 min guard
 
-DEFAULT_BASE_URL = "https://gwss.engie.ro/myservices"
-DEFAULT_TOKEN_FILE = "/config/engie_token.txt"
-UPDATE_INTERVAL_SEC = 1800  # 30 min
+TOKEN_STORAGE_FILE = ".storage/engie_ro_token.json"
 
-ATTRIBUTION = "Date furnizate de Engie România"
+# Device
+MANUFACTURER = "Engie România"
+DEVICE_NAME_FMT = "Engie {pa}"  # ex. "Engie 5001888606"
+
+# Keys model intern (normalizează răspunsul API)
+KEY_ACCOUNT = "pa"
+KEY_POC = "poc"
+KEY_DIVISION = "division"
+
+# Erori interne
+class AuthError(Exception):
+    pass
+
+class TemporaryApiError(Exception):
+    def __init__(self, status: int | None = None, message: str | None = None):
+        super().__init__(message)
+        self.status = status

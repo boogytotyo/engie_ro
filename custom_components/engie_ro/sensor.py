@@ -1,73 +1,87 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.const import UnitOfEnergy
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 
-from .const import ATTRIBUTION, DOMAIN
-from .coordinator import EngieDataCoordinator
+from .const import DOMAIN, MANUFACTURER, DEVICE_NAME_FMT
+from .coordinator import EngieCoordinator
 
-SENSOR_KEY_USER = "user"
-SENSOR_KEY_CONTRACTS = "contracts"
-SENSOR_KEY_INDEXES = "indexes"
-SENSOR_KEY_CONSUMPTION = "consumption"
-SENSOR_KEY_BALANCE = "balance"
-SENSOR_KEY_INVOICES = "invoices"
+PARALLEL_UPDATES = 0
 
-SENSORS = [
-    SENSOR_KEY_USER,
-    SENSOR_KEY_CONTRACTS,
-    SENSOR_KEY_INDEXES,
-    SENSOR_KEY_CONSUMPTION,
-    SENSOR_KEY_BALANCE,
-    SENSOR_KEY_INVOICES,
+@dataclass
+class EngieSensorDescription:
+    key: str
+    name: str
+    icon: str | None = None
+    native_unit: str | None = None
+
+SENSORS: list[EngieSensorDescription] = [
+    EngieSensorDescription("current_index.value", "Index curent", icon="mdi:counter", native_unit=UnitOfEnergy.KILO_WATT_HOUR),
+    EngieSensorDescription("billing_history.last.amount", "Ultima factură", icon="mdi:receipt-text"),
 ]
 
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    coord: EngieDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities: list[EngieSensor] = [EngieSensor(coord, key) for key in SENSORS]
+    coordinator: EngieCoordinator = hass.data[DOMAIN][entry.entry_id]
+
+    pa = (coordinator.data or {}).get("overview", {}).get("pa", "PA_UNKNOWN")
+    device = DeviceInfo(
+        identifiers={(DOMAIN, f"pa:{pa}")},
+        name=DEVICE_NAME_FMT.format(pa=pa),
+        manufacturer=MANUFACTURER,
+        configuration_url="https://my.engie.ro/"
+    )
+
+    entities: list[EngieSensor] = []
+    for desc in SENSORS:
+        entities.append(EngieSensor(coordinator, entry.entry_id, device, desc, pa))
     async_add_entities(entities)
 
-
 class EngieSensor(SensorEntity):
+    _attr_should_poll = False
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: EngieDataCoordinator, key: str) -> None:
-        self._coordinator = coordinator
-        self._key = key
-        self._attr_unique_id = f"{coordinator.entry.entry_id}-{key}"
-        self._attr_name = f"Engie {key}"
-        self._attr_attribution = ATTRIBUTION
+    def __init__(self, coordinator: EngieCoordinator, entry_id: str, device: DeviceInfo, desc: EngieSensorDescription, pa: str):
+        self.coordinator = coordinator
+        self.entity_description = desc
+        self._attr_unique_id = f"{entry_id}_{pa}_{desc.key}"
+        self._attr_device_info = device
+        if desc.native_unit:
+            self._attr_native_unit_of_measurement = desc.native_unit
+        if desc.icon:
+            self._attr_icon = desc.icon
 
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._coordinator.entry.entry_id)},
-            name="Engie România",
-            manufacturer="Engie",
-            model="Engie API",
-        )
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
 
     @property
     def available(self) -> bool:
-        return True
+        return self.coordinator.last_update_success
 
     @property
     def native_value(self) -> Any:
-        data = self._coordinator.data or {}
-        value = data.get(self._key)
-        if isinstance(value, dict | list):
-            return len(value)
-        return value
+        data = self.coordinator.data or {}
+        return dig(data, self.entity_description.key)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        data = self._coordinator.data or {}
-        val = data.get(self._key)
-        if isinstance(val, dict | list):
-            return {"data": val}
-        return None
+        data = self.coordinator.data or {}
+        history = data.get("billing_history", {})
+        return {
+            "billing_history": history.get("items"),
+            "poc": dig(data, "overview.poc"),
+            "division": dig(data, "overview.division"),
+        }
+
+def dig(data: dict[str, Any], path: str) -> Any:
+    cur: Any = data
+    for part in path.split("."):
+        if not isinstance(cur, dict):
+            return None
+        cur = cur.get(part)
+    return cur
