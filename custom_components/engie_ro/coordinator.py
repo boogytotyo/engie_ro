@@ -45,7 +45,6 @@ class EngieCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.api = api
         self.session = session
 
-
     async def _async_update_data(self) -> dict[str, Any]:
         try:
             overview_raw = await self.api.fetch_account_overview()
