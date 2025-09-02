@@ -1,24 +1,26 @@
 {
+  "title": "Engie Roumanie",
   "config": {
     "step": {
       "user": {
-        "title": "Engie Roumanie",
-        "description": "Configurer l'intégration Engie Roumanie",
+        "title": "Se connecter à Engie",
+        "description": "Saisissez vos identifiants Engie Roumanie.",
         "data": {
-          "base_url": "URL de base",
-          "auth_mode": "Mode d'authentification",
-          "username": "E-mail",
-          "password": "Mot de passe",
-          "device_id": "ID de l'appareil",
-          "bearer_token": "Jeton Bearer",
-          "token_file_path": "Chemin du fichier du jeton"
+          "username": "Email",
+          "password": "Mot de passe"
         }
       }
     },
     "error": {
-      "missing_credentials": "Nom d'utilisateur/Mot de passe requis",
-      "missing_bearer": "Jeton Bearer requis",
-      "invalid_auth_mode": "Mode d'authentification invalide"
+      "cannot_connect": "Échec de connexion à l'API Engie.",
+      "invalid_auth": "Identifiants invalides.",
+      "server_error": "Erreur serveur Engie (500). Réessayez plus tard.",
+      "rate_limited": "Trop de requêtes. Réessayez plus tard.",
+      "timeout": "Délai d'attente de l'API Engie dépassé.",
+      "unknown": "Erreur inattendue."
+    },
+    "abort": {
+      "already_configured": "Ce compte est déjà configuré."
     }
   }
 }
