@@ -4,6 +4,6 @@
   "zip_release": true,
   "render_readme": true,
   "domains": ["sensor"],
-  "filename": "engie_ro-{{version}}.zip",
+  "filename": "engie_ro.zip",
   "country": "RO"
 }
