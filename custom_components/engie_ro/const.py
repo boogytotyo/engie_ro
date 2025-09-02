@@ -1,18 +1,22 @@
+from __future__ import annotations
+
+from homeassistant.const import Platform
+
 DOMAIN = "engie_ro"
 
-CONF_BASE_URL = "base_url"
-CONF_USERNAME = "username"
+CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
-CONF_TOKEN_FILE = "token_file_path"
-CONF_DEVICE_ID = "device_id"
-CONF_AUTH_MODE = "auth_mode"
-CONF_BEARER_TOKEN = "bearer_token"
+CONF_TOKEN = "token"  # opțional, pentru mod avansat (bearer)
+CONF_LANGUAGE = "language"
 
-AUTH_MODE_MOBILE = "mobile_login"
-AUTH_MODE_BEARER = "bearer"
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.UPDATE]
 
-DEFAULT_BASE_URL = "https://gwss.engie.ro/myservices"
-DEFAULT_TOKEN_FILE = "/config/engie_token.txt"
-UPDATE_INTERVAL_SEC = 1800  # 30 min
+# interval default; poate fi ajustat din coordinator
+UPDATE_INTERVAL_MINUTES = 30
 
-ATTRIBUTION = "Date furnizate de Engie România"
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/122.0 Safari/537.36"
+)
+
+ATTRIBUTION = "Data: Engie România"
