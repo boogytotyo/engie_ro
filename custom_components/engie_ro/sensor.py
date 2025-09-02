@@ -47,9 +47,7 @@ class BaseEngieSensor(SensorEntity):
         return False
 
     async def async_added_to_hass(self) -> None:
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self.async_write_ha_state)
-        )
+        self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
 
 
 class EngieFacturaSensor(BaseEngieSensor):
@@ -140,9 +138,7 @@ class EngieConsumSensor(BaseEngieSensor):
             return f"{x:.2f}".replace(".", ",") + " lei"
 
         total = 0.0
-        for (y, m) in sorted(
-            by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True
-        )[:12]:
+        for y, m in sorted(by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True)[:12]:
             values = by_month[(y, m)]
             s = sum(v["amount"] for v in values if v.get("amount"))
             total += s
@@ -169,16 +165,12 @@ class EngieUpdateSensor(BaseEngieSensor):
     @property
     def native_value(self):
         # versiunea citită în __init__.py din manifest
-        version = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get(
-            "version"
-        )
+        version = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get("version")
         return version
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        version = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get(
-            "version"
-        )
+        version = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get("version")
         return {
             "auto_update": False,
             "display_precision": 0,
