@@ -1,28 +1,31 @@
 from __future__ import annotations
-from typing import Any, Dict
+
+from typing import Any
+
 import voluptuous as vol
 from homeassistant import config_entries
+
 from .const import (
-    DOMAIN,
+    AUTH_MODE_BEARER,
+    AUTH_MODE_MOBILE,
+    CONF_AUTH_MODE,
     CONF_BASE_URL,
-    CONF_USERNAME,
+    CONF_BEARER_TOKEN,
+    CONF_DEVICE_ID,
     CONF_PASSWORD,
     CONF_TOKEN_FILE,
-    CONF_DEVICE_ID,
-    CONF_AUTH_MODE,
-    CONF_BEARER_TOKEN,
+    CONF_USERNAME,
     DEFAULT_BASE_URL,
     DEFAULT_TOKEN_FILE,
-    AUTH_MODE_MOBILE,
-    AUTH_MODE_BEARER,
+    DOMAIN,
 )
 
 
 class EngieConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
-    async def async_step_user(self, user_input: Dict[str, Any] | None = None):
-        errors: Dict[str, str] = {}
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
 
         schema = vol.Schema(
             {

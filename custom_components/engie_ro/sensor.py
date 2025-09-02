@@ -1,10 +1,13 @@
 from __future__ import annotations
-from typing import Any, Dict
+
+from typing import Any
+
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
-from .const import DOMAIN, ATTRIBUTION
+
+from .const import ATTRIBUTION, DOMAIN
 from .coordinator import EngieDataCoordinator
 
 SENSOR_KEY_USER = "user"
@@ -62,7 +65,7 @@ class EngieSensor(SensorEntity):
         return value
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         data = self._coordinator.data or {}
         val = data.get(self._key)
         if isinstance(val, dict | list):

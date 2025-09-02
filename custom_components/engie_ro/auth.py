@@ -1,9 +1,15 @@
 from __future__ import annotations
+
+from typing import Any
+
 import aiohttp
-from typing import Any, Dict, Tuple
+
 
 class EngieAuthError(RuntimeError): ...
+
+
 class EngieAuthUnauthorized(EngieAuthError): ...
+
 
 class EngieMobileAuth:
     def __init__(self, base_url: str, session: aiohttp.ClientSession | None = None) -> None:
@@ -19,10 +25,10 @@ class EngieMobileAuth:
         if self._session:
             await self._session.close()
 
-    async def login(self, email: str, password: str, device_id: str) -> Tuple[str, str, Any, Any]:
+    async def login(self, email: str, password: str, device_id: str) -> tuple[str, str, Any, Any]:
         s = await self._session_get()
         url = f"{self.base_url}/v2/login/mobile"
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "email": (email or "").strip(),
             "password": (password or "").strip(),
             "device_id": (device_id or "").strip(),
@@ -54,6 +60,7 @@ class EngieMobileAuth:
             exp = data.get("exp")
             refresh_epoch = data.get("refresh_token_expiration_date")
             return token, refresh_token, exp, refresh_epoch
+
 
 class EngieBearerAuth:
     def __init__(self, bearer_token: str) -> None:
