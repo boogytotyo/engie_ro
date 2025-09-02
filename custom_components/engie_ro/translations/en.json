@@ -15,13 +15,13 @@
       "invalid_auth": "Invalid credentials.",
       "cannot_connect": "Cannot connect right now. Try again later.",
       "unknown": "Unexpected error."
-    },
-    "options": {
-      "step": {
-        "init": {
-          "data": {
-            "update_interval": "Update interval (seconds)"
-          }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "update_interval": "Update interval (seconds)"
         }
       }
     }

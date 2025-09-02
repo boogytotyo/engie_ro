@@ -15,13 +15,13 @@
       "invalid_auth": "Date de autentificare invalide.",
       "cannot_connect": "Nu mă pot conecta acum. Încearcă mai târziu.",
       "unknown": "Eroare neașteptată."
-    },
-    "options": {
-      "step": {
-        "init": {
-          "data": {
-            "update_interval": "Interval actualizare (secunde)"
-          }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "update_interval": "Interval actualizare (secunde)"
         }
       }
     }
