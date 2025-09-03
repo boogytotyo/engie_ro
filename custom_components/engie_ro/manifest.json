@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/boogytotyo/engie_ro/issues",
   "loggers": ["custom_components.engie_ro"],
   "requirements": [],
-  "version": "2.1.0"
+  "version": "2.0.3"
 }
