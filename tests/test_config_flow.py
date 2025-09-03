@@ -45,7 +45,9 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
             new=AsyncMock(return_value=True),
         ),
     ):
-        form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        form_result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
         assert form_result["type"] == "form"
 
         if login_ok:
