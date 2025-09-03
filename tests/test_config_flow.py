@@ -40,9 +40,9 @@ async def test_config_flow_user_step(hass: HomeAssistant, login_ok: bool):
             new=AsyncMock(),
         ),
         patch(
-            # Nici coordinatorul nu vrem să fie creat în testul acesta
-            "custom_components.engie_ro.__init__.create_coordinator",
-            new=AsyncMock(),
+            # Patch async_setup_entry ca să nu pornească integrarea efectiv
+            "custom_components.engie_ro.async_setup_entry",
+            new=AsyncMock(return_value=True),
         ),
     ):
         form_result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
