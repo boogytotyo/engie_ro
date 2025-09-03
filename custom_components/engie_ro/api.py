@@ -1,14 +1,21 @@
 from __future__ import annotations
-import aiohttp
-from datetime import datetime, timedelta
-from typing import Any, Dict, Tuple
+
+from typing import Any
 from urllib.parse import quote_plus
 
+import aiohttp
+
+
 class EngieHTTPError(RuntimeError): ...
+
+
 class EngieUnauthorized(EngieHTTPError): ...
 
+
 class EngieClient:
-    def __init__(self, base_url: str, token: str = "", session: aiohttp.ClientSession | None = None) -> None:
+    def __init__(
+        self, base_url: str, token: str = "", session: aiohttp.ClientSession | None = None
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.token = (token or "").strip()
         self._session = session
@@ -38,7 +45,7 @@ class EngieClient:
         if self._session:
             await self._session.close()
 
-    def _headers(self) -> Dict[str, str]:
+    def _headers(self) -> dict[str, str]:
         if not self.token:
             raise EngieHTTPError("No Bearer token configured.")
         return {
@@ -54,12 +61,12 @@ class EngieClient:
             "X-Requested-With": "XMLHttpRequest",
         }
 
-    def _headers_mobile(self, device_id: str) -> Dict[str, str]:
+    def _headers_mobile(self, device_id: str) -> dict[str, str]:
         h = dict(self.android_headers)
         h["Device-Id"] = device_id
         return h
 
-    async def _get(self, path: str, params: Dict[str, Any] | None = None) -> Any:
+    async def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         s = await self._session_get()
         url = f"{self.base_url}{path}"
         async with s.get(url, headers=self._headers(), params=params) as r:
@@ -73,7 +80,7 @@ class EngieClient:
             except Exception:
                 return txt
 
-    async def _post_form_json(self, path: str, form: Dict[str, str]) -> Any:
+    async def _post_form_json(self, path: str, form: dict[str, str]) -> Any:
         s = await self._session_get()
         url = f"{self.base_url}{path}"
         async with s.post(url, headers=self._headers(), data=form) as r:
@@ -87,7 +94,7 @@ class EngieClient:
             except Exception:
                 return txt
 
-    async def _post_json(self, path: str, payload: Dict[str, Any]) -> Any:
+    async def _post_json(self, path: str, payload: dict[str, Any]) -> Any:
         s = await self._session_get()
         url = f"{self.base_url}{path}"
         headers = dict(self._headers())
@@ -103,7 +110,9 @@ class EngieClient:
             except Exception:
                 return txt
 
-    async def mobile_login(self, username: str, password: str, device_id: str) -> Tuple[str, str | None, int | None, int | None]:
+    async def mobile_login(
+        self, username: str, password: str, device_id: str
+    ) -> tuple[str, str | None, int | None, int | None]:
         s = await self._session_get()
         url = f"{self.base_url}/v1/login"
         headers = self._headers_mobile(device_id)
@@ -152,8 +161,14 @@ class EngieClient:
         params = {"pa": pa} if pa else None
         return await self._get(f"/v1/placesofconsumption/divisions/{poc_number}", params=params)
 
-    async def get_index_window(self, poc_number: str, division: str = "gaz", pa: str | None = None, installation_number: str | None = None) -> Any:
-        params: Dict[str, Any] = {"poc_number": poc_number, "division": division}
+    async def get_index_window(
+        self,
+        poc_number: str,
+        division: str = "gaz",
+        pa: str | None = None,
+        installation_number: str | None = None,
+    ) -> Any:
+        params: dict[str, Any] = {"poc_number": poc_number, "division": division}
         if pa:
             params["pa"] = pa
         if installation_number:
@@ -162,24 +177,36 @@ class EngieClient:
 
     async def get_balance(self, contract_account: str) -> Any:
         try:
-            return await self._post_form_json("/v1/widgets/ballance", {"contract_account[]": contract_account})
+            return await self._post_form_json(
+                "/v1/widgets/ballance", {"contract_account[]": contract_account}
+            )
         except EngieHTTPError:
-            return await self._post_form_json("/v1/widgets/ballance", {"contract_account": contract_account})
+            return await self._post_form_json(
+                "/v1/widgets/ballance", {"contract_account": contract_account}
+            )
 
     async def get_invoices_details(self, contract_account: str) -> Any:
         try:
-            return await self._post_form_json("/v1/invoices/ballance-details", {"contract_account[]": contract_account})
+            return await self._post_form_json(
+                "/v1/invoices/ballance-details", {"contract_account[]": contract_account}
+            )
         except EngieHTTPError:
-            return await self._post_form_json("/v1/invoices/ballance-details", {"contract_account": contract_account})
+            return await self._post_form_json(
+                "/v1/invoices/ballance-details", {"contract_account": contract_account}
+            )
 
-    async def get_consumption(self, poc_number: str, start_date: str, end_date: str, pa: str | None = None) -> Any:
+    async def get_consumption(
+        self, poc_number: str, start_date: str, end_date: str, pa: str | None = None
+    ) -> Any:
         """GET /v1/index/consumption/{POC}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&pa=PA"""
-        params: Dict[str, Any] = {"startDate": start_date, "endDate": end_date}
+        params: dict[str, Any] = {"startDate": start_date, "endDate": end_date}
         if pa:
             params["pa"] = pa
         return await self._get(f"/v1/index/consumption/{poc_number}", params=params)
 
-    async def get_index_history_post(self, autocit: str, poc_number: str, division: str, start_date: str) -> Any:
+    async def get_index_history_post(
+        self, autocit: str, poc_number: str, division: str, start_date: str
+    ) -> Any:
         """POST /v1/index/history with JSON body."""
         payload = {
             "autocit": str(autocit),
@@ -187,12 +214,13 @@ class EngieClient:
             "division": str(division),
             "start_date": str(start_date),
         }
-        return await self._post_json("/v1/index/history", payload)    
+        return await self._post_json("/v1/index/history", payload)
 
-    
-    async def get_invoices_history(self, poc_number: str, start_date: str, end_date: str, pa: str | None = None) -> Any:
+    async def get_invoices_history(
+        self, poc_number: str, start_date: str, end_date: str, pa: str | None = None
+    ) -> Any:
         """GET /v1/invoices/history-only/{POC}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&pa=PA"""
-        params: Dict[str, Any] = {"startDate": start_date, "endDate": end_date}
+        params: dict[str, Any] = {"startDate": start_date, "endDate": end_date}
         if pa:
             params["pa"] = pa
         return await self._get(f"/v1/invoices/history-only/{poc_number}", params=params)
