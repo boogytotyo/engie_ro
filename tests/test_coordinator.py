@@ -90,4 +90,3 @@ async def test_coordinator_auth_error_triggers_reauth(hass: HomeAssistant, entry
         coord = await create_coordinator(hass, entry, timedelta(seconds=10))
         with pytest.raises(ConfigEntryAuthFailed):
             await coord._async_update_data()
-
