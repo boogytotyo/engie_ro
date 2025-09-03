@@ -216,7 +216,8 @@ class EngieInvoicesSensor(CoordinatorEntity, SensorEntity):
                     if d and a is not None:
                         items.append({"date": d[:10], "amount": a})
             elif isinstance(m, dict):
-                d = get_date(m); a = get_amount(m)
+                d = get_date(m)
+                a = get_amount(m)
                 if d and a is not None:
                     items.append({"date": d[:10], "amount": a})
 
@@ -242,14 +243,17 @@ class EngieInvoicesSensor(CoordinatorEntity, SensorEntity):
         by_month = {}
         for it in items[:240]:
             try:
-                y = int(it['date'][0:4]); m = int(it['date'][5:7])
+                y = int(it['date'][0:4])
+                m = int(it['date'][5:7])
             except Exception:
                 continue
             by_month[(y, m)] = by_month.get((y, m), 0.0) + it['amount']
 
         keys = sorted(by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True)[:12]
         luni = ['ianuarie','februarie','martie','aprilie','mai','iunie','iulie','august','septembrie','octombrie','noiembrie','decembrie']
-        fmt = lambda x: f"{x:.2f}".replace('.', ',') + ' lei'
+        def fmt(x):
+
+            return f\"{x:.2f}\".replace('.', ',') + ' lei'
 
         total = 0.0
         for (y, m) in keys:

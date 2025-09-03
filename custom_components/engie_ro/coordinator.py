@@ -78,12 +78,18 @@ def _parse_address(*payloads: Any):
         city = find(p, keys["city"])
         county = find(p, keys["county"])
         parts = []
-        if street: parts.append(street)
-        if number: parts.append(f"Nr. {number}")
-        if block: parts.append(f"Bl.{block}")
-        if apt: parts.append(f"Apt. {apt}")
-        if city: parts.append(city)
-        if county and county != city: parts.append(county)
+        if street:
+            parts.append(street)
+        if number:
+            parts.append(f"Nr. {number}")
+        if block:
+            parts.append(f"Bl.{block}")
+        if apt:
+            parts.append(f"Apt. {apt}")
+        if city:
+            parts.append(city)
+        if county and county != city:
+            parts.append(county)
         if parts:
             return ", ".join(parts)
     return None

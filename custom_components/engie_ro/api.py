@@ -115,8 +115,8 @@ class EngieClient:
                 raise EngieHTTPError(f"LOGIN -> {r.status}: {txt}")
             try:
                 j = await r.json()
-            except Exception:
-                raise EngieHTTPError(f"LOGIN: non-JSON response: {txt}")
+            except Exception as err:
+                raise EngieHTTPError(f"LOGIN: non-JSON response: {txt}") from err
             data = j.get("data") if isinstance(j, dict) else None
             if not isinstance(data, dict):
                 raise EngieHTTPError(f"LOGIN: unexpected JSON: {j}")
