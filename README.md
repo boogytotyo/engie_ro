@@ -1,11 +1,11 @@
 # Engie România – Integrare Home Assistant
 
 [![Release](https://img.shields.io/github/v/release/boogytotyo/engie_ro?display_name=tag&sort=semver)](https://github.com/boogytotyo/engie_ro/releases)
+[![🚀 Release](https://github.com/boogytotyo/engie_ro/actions/workflows/release.yml/badge.svg)](https://github.com/boogytotyo/engie_ro/actions/workflows/release.yml)
 [![Downloads](https://img.shields.io/github/downloads/boogytotyo/engie_ro/total.svg)](https://github.com/boogytotyo/engie_ro/releases)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-blue.svg)](https://hacs.xyz/)
 [![🧹 Lint](https://github.com/boogytotyo/engie_ro/actions/workflows/lint.yml/badge.svg)](https://github.com/boogytotyo/engie_ro/actions/workflows/lint.yml)
 [![✅ Validate](https://github.com/boogytotyo/engie_ro/actions/workflows/validate.yml/badge.svg)](https://github.com/boogytotyo/engie_ro/actions/workflows/validate.yml)
-[![🚀 Release](https://github.com/boogytotyo/engie_ro/actions/workflows/release.yml/badge.svg)](https://github.com/boogytotyo/engie_ro/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 
