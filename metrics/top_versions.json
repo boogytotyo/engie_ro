@@ -1,16 +1,16 @@
 {
-  "generated_at": "2025-09-02T17:48:35.250Z",
+  "generated_at": "2025-09-03T01:57:29.075Z",
   "top": [
     {
       "tag": "v2.0.2",
       "name": "v2.0.2",
       "prerelease": false,
       "published_at": "2025-08-27T16:51:29Z",
-      "downloads": 4,
+      "downloads": 5,
       "assets": [
         {
           "name": "engie_ro-2.0.2.zip",
-          "download_count": 2,
+          "download_count": 3,
           "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/v2.0.2/engie_ro-2.0.2.zip"
         },
         {
@@ -22,30 +22,6 @@
           "name": "v2.0.2.zip",
           "download_count": 1,
           "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/v2.0.2/v2.0.2.zip"
-        }
-      ]
-    },
-    {
-      "tag": "2.0.3",
-      "name": "lint fix",
-      "prerelease": false,
-      "published_at": "2025-09-02T15:01:19Z",
-      "downloads": 1,
-      "assets": [
-        {
-          "name": "engie_ro-2.0.3.zip",
-          "download_count": 0,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.0.3/engie_ro-2.0.3.zip"
-        },
-        {
-          "name": "engie_ro-2.0.3.zip.sha256",
-          "download_count": 0,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.0.3/engie_ro-2.0.3.zip.sha256"
-        },
-        {
-          "name": "engie_ro.zip",
-          "download_count": 1,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.0.3/engie_ro.zip"
         }
       ]
     },
@@ -62,14 +38,6 @@
           "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/v2.0.1/engie_ro-2.0.1.zip"
         }
       ]
-    },
-    {
-      "tag": "2.0.4",
-      "name": "",
-      "prerelease": false,
-      "published_at": "2025-09-02T17:48:28Z",
-      "downloads": 0,
-      "assets": []
     }
   ]
 }
