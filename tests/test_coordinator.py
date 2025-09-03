@@ -8,10 +8,10 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.engie_ro.const import (
-    AuthError,
     CONF_EMAIL,
     CONF_PASSWORD,
     DOMAIN,
+    AuthError,
 )
 from custom_components.engie_ro.coordinator import create_coordinator
 
@@ -93,5 +93,5 @@ async def test_coordinator_auth_error_triggers_reauth(hass: HomeAssistant, entry
         patch("custom_components.engie_ro.api.EngieApiClient.fetch_account_overview", new=AsyncMock(side_effect=AuthError("401"))),
     ):
         coord = await create_coordinator(hass, entry, timedelta(seconds=10))
-        with pytest.raises(Exception):
+        with pytest.raises(AuthError):
             await coord._async_update_data()
