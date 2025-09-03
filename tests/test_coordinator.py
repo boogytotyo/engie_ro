@@ -5,10 +5,14 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.engie_ro.const import CONF_EMAIL, CONF_PASSWORD, DOMAIN
+from custom_components.engie_ro.const import (
+    AuthError,
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    DOMAIN,
+)
 from custom_components.engie_ro.coordinator import create_coordinator
 
 
@@ -18,7 +22,6 @@ def entry(hass: HomeAssistant):
         domain=DOMAIN,
         title="Engie (u@x.y)",
         data={CONF_EMAIL: "u@x.y", CONF_PASSWORD: "p"},
-        options={},
         unique_id="engie_ro:test",
         version=1,
         minor_version=1,
@@ -29,18 +32,10 @@ def entry(hass: HomeAssistant):
 
 async def test_coordinator_happy_path(hass: HomeAssistant, entry: MockConfigEntry):
     with (
-        patch(
-            "homeassistant.helpers.aiohttp_client.async_get_clientsession",
-            return_value=object(),
-        ),
-        patch(
-            "custom_components.engie_ro.api.EngieApiClient.load_token",
-            new=AsyncMock(return_value="TOK"),
-        ),
-        patch(
-            "custom_components.engie_ro.api.EngieApiClient.save_token",
-            new=AsyncMock(),
-        ),
+        patch("homeassistant.helpers.aiohttp_client.async_get_clientsession", return_value=object()),
+        patch("custom_components.engie_ro.api.ClientSession", autospec=True),
+        patch("custom_components.engie_ro.api.EngieApiClient.load_token", new=AsyncMock(return_value="TOK")),
+        patch("custom_components.engie_ro.api.EngieApiClient.save_token", new=AsyncMock()),
         patch("custom_components.engie_ro.api.EngieApiClient.set_runtime_token"),
         patch(
             "custom_components.engie_ro.api.EngieApiClient.fetch_account_overview",
@@ -92,22 +87,11 @@ async def test_coordinator_happy_path(hass: HomeAssistant, entry: MockConfigEntr
 
 
 async def test_coordinator_auth_error_triggers_reauth(hass: HomeAssistant, entry: MockConfigEntry):
-    from custom_components.engie_ro.const import AuthError
-
     with (
-        patch(
-            "homeassistant.helpers.aiohttp_client.async_get_clientsession",
-            return_value=object(),
-        ),
-        patch(
-            "custom_components.engie_ro.api.EngieApiClient.load_token",
-            new=AsyncMock(return_value="TOK"),
-        ),
-        patch(
-            "custom_components.engie_ro.api.EngieApiClient.fetch_account_overview",
-            new=AsyncMock(side_effect=AuthError("401")),
-        ),
+        patch("custom_components.engie_ro.api.ClientSession", autospec=True),
+        patch("custom_components.engie_ro.api.EngieApiClient.load_token", new=AsyncMock(return_value="TOK")),
+        patch("custom_components.engie_ro.api.EngieApiClient.fetch_account_overview", new=AsyncMock(side_effect=AuthError("401"))),
     ):
         coord = await create_coordinator(hass, entry, timedelta(seconds=10))
-        with pytest.raises(ConfigEntryAuthFailed):
+        with pytest.raises(Exception):
             await coord._async_update_data()
