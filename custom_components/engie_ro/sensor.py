@@ -252,8 +252,8 @@ class EngieInvoicesSensor(CoordinatorEntity, SensorEntity):
         keys = sorted(by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True)[:12]
         luni = ['ianuarie','februarie','martie','aprilie','mai','iunie','iulie','august','septembrie','octombrie','noiembrie','decembrie']
         def fmt(x):
+            return f"{x:.2f}".replace('.', ',') + ' lei'
 
-            return f\"{x:.2f}\".replace('.', ',') + ' lei'
 
         total = 0.0
         for (y, m) in keys:
