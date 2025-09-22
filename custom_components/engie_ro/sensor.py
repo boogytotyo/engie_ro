@@ -64,11 +64,12 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
                 return float(unpaid)
             except Exception:
                 return unpaid
-        
+
         if self._sid == "engie_index_curent":
             info = data.get("index_info") or {}
             try:
                 from datetime import datetime as _dt
+
                 today = _dt.now().date()
 
                 def _parse(d):
@@ -187,6 +188,7 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
             idx = data.get("index_info") or {}
             try:
                 from datetime import datetime as _dt
+
                 def _parse(d):
                     for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d.%m.%Y"):
                         try:
@@ -194,6 +196,7 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
                         except Exception:
                             continue
                     return None
+
                 sd_raw = idx.get("start_date")
                 ed_raw = idx.get("end_date")
                 sd_p = _parse(sd_raw)
