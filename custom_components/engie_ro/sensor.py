@@ -64,17 +64,26 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
                 return float(unpaid)
             except Exception:
                 return unpaid
+        
         if self._sid == "engie_index_curent":
             info = data.get("index_info") or {}
             try:
                 from datetime import datetime as _dt
-
                 today = _dt.now().date()
+
+                def _parse(d):
+                    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d.%m.%Y"):
+                        try:
+                            return _dt.strptime(d, fmt).date()
+                        except Exception:
+                            continue
+                    return None
+
                 sd = info.get("start_date")
                 ed = info.get("end_date")
-                if sd and ed:
-                    sd_d = _dt.strptime(sd, "%Y-%m-%d").date()
-                    ed_d = _dt.strptime(ed, "%Y-%m-%d").date()
+                sd_d = _parse(sd) if sd else None
+                ed_d = _parse(ed) if ed else None
+                if sd_d and ed_d:
                     return "Da" if sd_d <= today <= ed_d else "Nu"
             except Exception:
                 pass
@@ -176,10 +185,28 @@ class EngieSensor(CoordinatorEntity, SensorEntity):
 
         if self._sid == "engie_index_curent":
             idx = data.get("index_info") or {}
+            try:
+                from datetime import datetime as _dt
+                def _parse(d):
+                    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d.%m.%Y"):
+                        try:
+                            return _dt.strptime(d, fmt)
+                        except Exception:
+                            continue
+                    return None
+                sd_raw = idx.get("start_date")
+                ed_raw = idx.get("end_date")
+                sd_p = _parse(sd_raw)
+                ed_p = _parse(ed_raw)
+                sd_out = sd_p.strftime("%d-%m-%Y") if sd_p else sd_raw
+                ed_out = ed_p.strftime("%d-%m-%Y") if ed_p else ed_raw
+            except Exception:
+                sd_out = idx.get("start_date")
+                ed_out = idx.get("end_date")
             attrs = {
                 "autocit": idx.get("autocit"),
-                "start_citire": idx.get("start_date"),
-                "end_citire": idx.get("end_date"),
+                "start_citire": sd_out,
+                "end_citire": ed_out,
                 "icon": "mdi:counter",
                 "friendly_name": "Engie – Index curent",
             }
