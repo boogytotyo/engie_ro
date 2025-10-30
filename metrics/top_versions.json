@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-29T02:19:16.233Z",
+  "generated_at": "2025-10-30T02:17:31.133Z",
   "top": [
     {
       "tag": "v2.0.2",
@@ -30,7 +30,7 @@
       "name": "2.0.4",
       "prerelease": false,
       "published_at": "2025-09-22T11:04:33Z",
-      "downloads": 2,
+      "downloads": 3,
       "assets": [
         {
           "name": "engie_ro-2.0.4.zip",
@@ -44,7 +44,7 @@
         },
         {
           "name": "engie_ro.zip",
-          "download_count": 2,
+          "download_count": 3,
           "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.0.4/engie_ro.zip"
         }
       ]
