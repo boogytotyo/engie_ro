@@ -25,32 +25,50 @@ from .const import (
 AUTH_MODES = [AUTH_MODE_MOBILE, AUTH_MODE_BEARER]
 
 
-def _map_engie_error(exc) -> str:
-    code = getattr(exc, "status", None) or getattr(exc, "status_code", None)
-    if code == 401:
-        return "invalid_auth"
-    if code in (403,):
-        return "invalid_auth"
-    if code in (429,):
-        return "rate_limited"
-    if code in (500, 502, 503, 504):
-        return "server_error"
-    if code in (408,):
-        return "timeout"
-    return "cannot_connect"
+def _unique_token_file(username: str = "") -> str:
+    """Return a unique token file path. Always guaranteed to be unique."""
+    if username:
+        safe = (
+            username.strip().lower()
+            .replace("@", "_at_")
+            .replace(".", "_")
+            .replace("+", "_")
+            .replace(" ", "_")
+        )
+        return f"/config/engie_token_{safe}.txt"
+    # No username (bearer mode) — use a short random suffix
+    return f"/config/engie_token_{uuid.uuid4().hex[:8]}.txt"
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
+        errors: dict[str, str] = {}
+
         if user_input is not None:
-            await self.async_set_unique_id(DOMAIN)
+            auth_mode = user_input.get(CONF_AUTH_MODE) or AUTH_MODE_MOBILE
+            username = (user_input.get(CONF_USERNAME) or "").strip().lower()
+            token_file = (user_input.get(CONF_TOKEN_FILE) or "").strip()
+
+            # Unique ID = username for mobile, or a uuid for bearer
+            unique_basis = username if username else uuid.uuid4().hex
+            await self.async_set_unique_id(unique_basis)
             self._abort_if_unique_id_configured()
+
+            # Always assign a unique token file — override default or empty values
+            if not token_file or token_file == DEFAULT_TOKEN_FILE:
+                token_file = _unique_token_file(username)
+            user_input[CONF_TOKEN_FILE] = token_file
+
             user_input[CONF_DEVICE_ID] = (
                 user_input.get(CONF_DEVICE_ID) or "ha-" + uuid.uuid4().hex[:12]
             )
-            return self.async_create_entry(title="Engie România", data=user_input)
+            title = (
+                f"Engie România ({username})" if username
+                else "Engie România (bearer)"
+            )
+            return self.async_create_entry(title=title, data=user_input)
 
         schema = vol.Schema(
             {
@@ -62,7 +80,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_BASE_URL, default=DEFAULT_BASE_URL): str,
             }
         )
-        return self.async_show_form(step_id="user", data_schema=schema)
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
     @callback
@@ -100,7 +118,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(CONF_PASSWORD, default=d.get(CONF_PASSWORD, "")): str,
                 vol.Optional(CONF_BEARER_TOKEN, default=d.get(CONF_BEARER_TOKEN, "")): str,
                 vol.Optional(
-                    CONF_TOKEN_FILE, default=d.get(CONF_TOKEN_FILE, DEFAULT_TOKEN_FILE)
+                    CONF_TOKEN_FILE,
+                    default=d.get(CONF_TOKEN_FILE, DEFAULT_TOKEN_FILE),
                 ): str,
                 vol.Optional(CONF_BASE_URL, default=d.get(CONF_BASE_URL, DEFAULT_BASE_URL)): str,
             }
