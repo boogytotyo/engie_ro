@@ -1,8 +1,16 @@
 {
-  "generated_at": "2026-03-20T03:12:06.598Z",
+  "generated_at": "2026-03-20T21:27:30.630Z",
   "repository": "boogytotyo/engie_ro",
   "total_downloads": 59,
   "per_release": [
+    {
+      "tag": "2.1.0",
+      "name": "v2.1.0 – Suport multi-cont și locuri de consum multiple",
+      "prerelease": false,
+      "published_at": "2026-03-20T21:27:24Z",
+      "downloads": 0,
+      "assets": []
+    },
     {
       "tag": "2.0.4",
       "name": "2.0.4",
