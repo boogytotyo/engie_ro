@@ -1,351 +1,480 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import ATTRIBUTION, DOMAIN
-
-SENSORS = [
-    "engie_date_utilizator_contract",
-    "engie_factura_restanta_valoare",
-    "engie_istoric_index",
-    "engie_index_curent",
-]
+from .coordinator import EngieDataCoordinator
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    coord = hass.data[DOMAIN][entry.entry_id]
-    entities = [EngieSensor(coord, sid) for sid in SENSORS]
-    # adăugăm senzorul special pentru arhiva de facturi
-    entities.append(
-        EngieInvoicesSensor(
-            coord, "engie_arhiva_facturi", "Engie – Arhivă facturi", "mdi:cash-register"
-        )
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _extract_places(raw: Any) -> list[dict[str, Any]]:
+    """Return only real consumption places (those with a poc_number)."""
+
+    def _walk(node: Any):
+        if isinstance(node, dict):
+            yield node
+            for value in node.values():
+                yield from _walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                yield from _walk(item)
+
+    places: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for item in _walk(raw):
+        if not isinstance(item, dict):
+            continue
+        poc = item.get("poc_number") or item.get("pocNumber") or item.get("poc")
+        if not poc:
+            continue
+        uid = str(poc).strip()
+        if not uid or uid in seen:
+            continue
+        seen.add(uid)
+        places.append(item)
+
+    return places
+
+
+def _format_address_value(value: Any) -> str | None:
+    if not value:
+        return None
+    if isinstance(value, str):
+        return value.strip() or None
+    if isinstance(value, Mapping):
+        inline = value.get("inline")
+        if inline:
+            return str(inline)
+        parts: list[str] = []
+        street = value.get("street")
+        number = value.get("number")
+        building = value.get("building")
+        staircase = value.get("staircase")
+        floor = value.get("floor")
+        apartment = value.get("apartment")
+        city = value.get("city")
+        if street:
+            street_part = str(street)
+            if number:
+                street_part += f" {number}"
+            parts.append(street_part)
+        if building:
+            parts.append(f"Bl. {building}")
+        if staircase:
+            parts.append(f"Sc. {staircase}")
+        if floor:
+            parts.append(f"Et. {floor}")
+        if apartment:
+            parts.append(f"Ap. {apartment}")
+        if city:
+            parts.append(str(city))
+        if parts:
+            return ", ".join(parts)
+    return str(value)
+
+
+def _place_poc(place: Mapping[str, Any], index: int) -> str:
+    return str(place.get("poc_number") or place.get("pocNumber") or place.get("poc") or index)
+
+
+def _place_address(place: Mapping[str, Any], index: int) -> str:
+    for key in ("address", "consumptionPlaceAddress", "name", "label", "site_name", "siteName"):
+        formatted = _format_address_value(place.get(key))
+        if formatted:
+            return formatted
+    return f"Loc consum {index + 1}"
+
+
+def _place_contract(place: Mapping[str, Any]) -> str | None:
+    return (
+        place.get("contract_account")
+        or place.get("contractAccount")
+        or place.get("contract_account_number")
+        or place.get("contractAccountNumber")
     )
+
+
+def _place_division(place: Mapping[str, Any]) -> str | None:
+    return place.get("division") or place.get("commodity") or place.get("type")
+
+
+# ---------------------------------------------------------------------------
+# Setup
+# ---------------------------------------------------------------------------
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+) -> None:
+    coordinator: EngieDataCoordinator = hass.data[DOMAIN][entry.entry_id]
+    data = coordinator.data or {}
+    places = _extract_places(data.get("places"))
+
+    entities: list[SensorEntity] = [
+        EngieAccountSensor(coordinator, entry, "account_places_count"),
+        EngieAccountSensor(coordinator, entry, "account_profile"),
+    ]
+
+    for idx, place in enumerate(places):
+        # 3 senzori de bază pentru orice loc de consum
+        entities.extend([
+            EngiePlaceSensor(
+                coordinator, entry, place, idx, "summary",
+                "Engie – Rezumat", "mdi:home-city-outline",
+            ),
+            EngiePlaceSensor(
+                coordinator, entry, place, idx, "address",
+                "Engie – Adresă", "mdi:map-marker",
+            ),
+            EngiePlaceSensor(
+                coordinator, entry, place, idx, "contract",
+                "Engie – Contract", "mdi:file-document-outline",
+            ),
+        ])
+
+        # 4 senzori suplimentari — pentru TOATE locurile
+        entities.extend([
+            EngiePlaceDataSensor(
+                coordinator, entry, place, idx,
+                "current_index_window",
+                "Engie – Index curent",
+                "mdi:counter",
+            ),
+            EngiePlaceDataSensor(
+                coordinator, entry, place, idx,
+                "unpaid_total",
+                "Engie – Valoare factură restantă",
+                "mdi:file-document-alert-outline",
+            ),
+            EngiePlaceDataSensor(
+                coordinator, entry, place, idx,
+                "invoice_archive_count",
+                "Engie – Arhivă facturi",
+                "mdi:cash-register",
+            ),
+            EngiePlaceDataSensor(
+                coordinator, entry, place, idx,
+                "index_history_last",
+                "Engie – Ultimul index din istoric",
+                "mdi:history",
+            ),
+        ])
+
     async_add_entities(entities, True)
 
 
-class EngieSensor(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator, sensor_id: str):
+# ---------------------------------------------------------------------------
+# Base entity
+# ---------------------------------------------------------------------------
+
+class EngieBaseEntity(CoordinatorEntity[EngieDataCoordinator], SensorEntity):
+    def __init__(self, coordinator: EngieDataCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._sid = sensor_id
-        self._attr_unique_id = sensor_id
+        self._entry = entry
+
+    @property
+    def _account_identifier(self) -> tuple[str, str]:
+        return (DOMAIN, f"account_{self._entry.entry_id}")
+
+    @property
+    def account_device_info(self) -> DeviceInfo:
+        profile = (self.coordinator.data or {}).get("profile") or {}
+        email = profile.get("email") or self._entry.data.get("username") or self._entry.title
+        return DeviceInfo(
+            identifiers={self._account_identifier},
+            manufacturer="Engie România",
+            model="Account",
+            name=f"Engie România - {email}",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Account-level sensors
+# ---------------------------------------------------------------------------
+
+class EngieAccountSensor(EngieBaseEntity):
+    def __init__(
+        self, coordinator: EngieDataCoordinator, entry: ConfigEntry, sensor_key: str
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._sensor_key = sensor_key
+        self._attr_unique_id = f"{entry.entry_id}_{sensor_key}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return self.account_device_info
 
     @property
     def name(self) -> str:
-        names = {
-            "engie_date_utilizator_contract": "Engie – Date utilizator/contract",
-            "engie_factura_restanta_valoare": "Engie – Valoare factură restantă",
-            "engie_istoric_index": "Engie – Istoric index",
-            "engie_index_curent": "Engie – Index curent",
-        }
-        return names.get(self._sid, self._sid)
+        return {
+            "account_places_count": "Engie – Număr locuri de consum",
+            "account_profile": "Engie – Cont",
+        }[self._sensor_key]
 
     @property
     def icon(self) -> str | None:
-        if self._sid in ("engie_istoric_index", "engie_index_curent"):
-            return "mdi:counter"
-        if self._sid == "engie_factura_restanta_valoare":
-            return "mdi:file-document-alert"
-        if self._sid == "engie_date_utilizator_contract":
-            return "mdi:account"
-        return None
+        return {
+            "account_places_count": "mdi:counter",
+            "account_profile": "mdi:account-circle-outline",
+        }.get(self._sensor_key)
 
     @property
-    def native_value(self):
+    def native_value(self) -> Any:
         data = self.coordinator.data or {}
-        if self._sid == "engie_factura_restanta_valoare":
-            unpaid = data.get("unpaid_total")
-            if unpaid is None:
-                return 0.0
-            try:
-                return float(unpaid)
-            except Exception:
-                return unpaid
-
-        if self._sid == "engie_index_curent":
-            info = data.get("index_info") or {}
-            try:
-                from datetime import datetime as _dt
-
-                today = _dt.now().date()
-
-                def _parse(d):
-                    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d.%m.%Y"):
-                        try:
-                            return _dt.strptime(d, fmt).date()
-                        except Exception:
-                            continue
-                    return None
-
-                sd = info.get("start_date")
-                ed = info.get("end_date")
-                sd_d = _parse(sd) if sd else None
-                ed_d = _parse(ed) if ed else None
-                if sd_d and ed_d:
-                    return "Da" if sd_d <= today <= ed_d else "Nu"
-            except Exception:
-                pass
-            return "Nu"
-        if self._sid == "engie_istoric_index":
-            # Return latest index value from history
-            data = self.coordinator.data or {}
-            lines = data.get("index_history_list") or []
-            latest_dt = None
-            latest_val = None
-            from datetime import datetime as _dt
-
-            for line in lines:
-                try:
-                    if "	" in line:
-                        d_s, idx_s = line.split("	", 1)
-                    else:
-                        d_s, idx_s = line, ""
-                    dt = _dt.strptime(d_s, "%d.%m.%Y")
-                    if latest_dt is None or dt > latest_dt:
-                        try:
-                            latest_val = int(float(idx_s.replace(",", ".")))
-                        except Exception:
-                            latest_val = idx_s
-                        latest_dt = dt
-                except Exception:
-                    continue
-            return latest_val
-        if self._sid == "engie_date_utilizator_contract":
-            return (self.coordinator.data or {}).get("pa")
-        return None
-
-    @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data or {}
-
-        if self._sid == "engie_date_utilizator_contract":
+        if self._sensor_key == "account_places_count":
+            return len(_extract_places(data.get("places")))
+        if self._sensor_key == "account_profile":
             prof = data.get("profile") or {}
-            attrs = {
+            return prof.get("email") or prof.get("name") or self._entry.title
+        return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        data = self.coordinator.data or {}
+        if self._sensor_key == "account_profile":
+            prof = data.get("profile") or {}
+            return {
+                "attribution": ATTRIBUTION,
                 "email": prof.get("email"),
                 "nume": prof.get("name"),
                 "telefon": prof.get("phone"),
-                "adresa": data.get("address"),
-                "poc_number": data.get("poc_number"),
-                "division": data.get("division"),
-                "installation_number": data.get("installation_number"),
-                "contract_account": data.get("contract_account_number"),
-                "pa": data.get("pa"),
                 "last_update": data.get("last_update"),
             }
-            return attrs
-
-        if self._sid == "engie_factura_restanta_valoare":
-            return {"unpaid_list": data.get("unpaid_list") or []}
-
-        if self._sid == "engie_istoric_index":
-            lines = data.get("index_history_list") or []
-            # păstrăm ultima citire din fiecare lună
-            months_map = {}
-            from datetime import datetime as _dt
-
-            for line in lines:
-                try:
-                    if "\t" in line:
-                        d_s, idx_s = line.split("\t", 1)
-                    else:
-                        d_s, idx_s = line, ""
-                    dt = _dt.strptime(d_s, "%d.%m.%Y")
-                    month = dt.month
-                    try:
-                        idx_val = int(float(idx_s.replace(",", ".")))
-                    except Exception:
-                        idx_val = idx_s
-                    if month not in months_map or dt > months_map[month][0]:
-                        months_map[month] = (dt, idx_val)
-                except Exception:
-                    continue
-            luni = [
-                "ianuarie",
-                "februarie",
-                "martie",
-                "aprilie",
-                "mai",
-                "iunie",
-                "iulie",
-                "august",
-                "septembrie",
-                "octombrie",
-                "noiembrie",
-                "decembrie",
-            ]
-            attrs = {}
-            for m in sorted(months_map.keys(), reverse=True):
-                attrs[luni[m - 1]] = months_map[m][1]
-            attrs["attribution"] = ATTRIBUTION
-            attrs["icon"] = "mdi:counter"
-            attrs["friendly_name"] = "Engie – Istoric index"
-            return attrs
-
-        if self._sid == "engie_index_curent":
-            idx = data.get("index_info") or {}
-            try:
-                from datetime import datetime as _dt
-
-                def _parse(d):
-                    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d.%m.%Y"):
-                        try:
-                            return _dt.strptime(d, fmt)
-                        except Exception:
-                            continue
-                    return None
-
-                sd_raw = idx.get("start_date")
-                ed_raw = idx.get("end_date")
-                sd_p = _parse(sd_raw)
-                ed_p = _parse(ed_raw)
-                sd_out = sd_p.strftime("%d-%m-%Y") if sd_p else sd_raw
-                ed_out = ed_p.strftime("%d-%m-%Y") if ed_p else ed_raw
-            except Exception:
-                sd_out = idx.get("start_date")
-                ed_out = idx.get("end_date")
-            attrs = {
-                "autocit": idx.get("autocit"),
-                "start_citire": sd_out,
-                "end_citire": ed_out,
-                "icon": "mdi:counter",
-                "friendly_name": "Engie – Index curent",
-            }
-            return attrs
-
-        return {}
+        return {"attribution": ATTRIBUTION}
 
 
-class EngieInvoicesSensor(CoordinatorEntity, SensorEntity):
-    """Arhivă facturi – folosește coordinator.data['invoices_history'] (endpoint invoices/history-only)."""
+# ---------------------------------------------------------------------------
+# Place entity base
+# ---------------------------------------------------------------------------
 
-    _attr_icon = "mdi:cash-register"
+class EngiePlaceEntity(EngieBaseEntity):
+    def __init__(
+        self,
+        coordinator: EngieDataCoordinator,
+        entry: ConfigEntry,
+        place: Mapping[str, Any],
+        index: int,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._place = dict(place)
+        self._index = index
+        self._poc = _place_poc(place, index)
+        self._address = _place_address(place, index)
 
-    def __init__(self, coordinator, sensor_id: str, name: str, icon: str) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = sensor_id
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._entry.entry_id}_place_{self._poc}")},
+            manufacturer="Engie România",
+            model="Consumption Place",
+            name=f"Engie România ({self._poc})",
+            suggested_area=self._address,
+            via_device=self._account_identifier,
+        )
+
+    def _place_data(self) -> dict[str, Any]:
+        """Return the coordinator data slice for this place."""
+        places_data = (self.coordinator.data or {}).get("places_data") or {}
+        return places_data.get(self._poc) or {}
+
+    def _base_attrs(self) -> dict[str, Any]:
+        """Minimal common attributes — only clean, relevant fields."""
+        pd = self._place_data()
+        attrs: dict[str, Any] = {
+            "attribution": ATTRIBUTION,
+            "poc_number": self._poc,
+        }
+        address = pd.get("address") or self._address
+        if address:
+            attrs["adresa"] = address
+        contract = pd.get("contract_account_number") or pd.get("contract_account") or _place_contract(self._place)
+        if contract:
+            attrs["cont_contract"] = contract
+        division = pd.get("division") or _place_division(self._place)
+        if division:
+            attrs["tip_energie"] = division
+        pa = pd.get("pa")
+        if pa:
+            attrs["pa"] = pa
+        return attrs
+
+
+# ---------------------------------------------------------------------------
+# Basic place sensors (address, contract, summary)
+# ---------------------------------------------------------------------------
+
+class EngiePlaceSensor(EngiePlaceEntity):
+    def __init__(
+        self,
+        coordinator: EngieDataCoordinator,
+        entry: ConfigEntry,
+        place: Mapping[str, Any],
+        index: int,
+        sensor_key: str,
+        name: str,
+        icon: str,
+    ) -> None:
+        super().__init__(coordinator, entry, place, index)
+        self._sensor_key = sensor_key
+        self._attr_unique_id = f"{entry.entry_id}_place_{self._poc}_{sensor_key}"
         self._attr_name = name
         self._attr_icon = icon
 
-    def _collect_invoices(self):
-        """Returnează o listă [{date:'YYYY-MM-DD', amount:float}] sortată desc."""
-        hist = (self.coordinator.data or {}).get("invoices_history") or {}
-        months = []
-        if isinstance(hist, dict):
-            data = hist.get("data")
-            if isinstance(data, list):
-                months = data
-            elif isinstance(data, dict):
-                for k in ("history", "months", "items", "list", "data"):
-                    v = data.get(k)
-                    if isinstance(v, list):
-                        months = v
-                        break
-        elif isinstance(hist, list):
-            months = hist
-
-        def get_date(obj):
-            for k in ("invoiced_at", "issued_at", "issue_date", "date", "data", "month"):
-                v = obj.get(k)
-                if isinstance(v, str) and len(v) >= 7:
-                    return v[:10]
-            return None
-
-        def get_amount(obj):
-            for k in ("total", "amount", "value"):
-                if k in obj and obj[k] is not None:
-                    try:
-                        return float(str(obj[k]).replace(",", "."))
-                    except Exception:
-                        pass
-            return None
-
-        items = []
-        for m in months:
-            invs = m.get("invoices") or m.get("invoice_list") or m.get("items")
-            if isinstance(invs, list) and invs:
-                for inv in invs:
-                    d = get_date(inv) or get_date(m)
-                    a = get_amount(inv)
-                    if d and a is not None:
-                        items.append({"date": d[:10], "amount": a})
-            elif isinstance(m, dict):
-                d = get_date(m)
-                a = get_amount(m)
-                if d and a is not None:
-                    items.append({"date": d[:10], "amount": a})
-
-        from datetime import datetime as _dt
-
-        items.sort(
-            key=lambda x: (_dt.strptime(x["date"][:10], "%Y-%m-%d") if x.get("date") else _dt.min),
-            reverse=True,
-        )
-        return items
+    @property
+    def native_value(self) -> Any:
+        pd = self._place_data()
+        if self._sensor_key == "summary":
+            return pd.get("poc_number") or _place_division(self._place) or self._poc
+        if self._sensor_key == "address":
+            return pd.get("address") or self._address
+        if self._sensor_key == "contract":
+            return (
+                pd.get("contract_account_number")
+                or pd.get("contract_account")
+                or _place_contract(self._place)
+                or "—"
+            )
+        return None
 
     @property
-    def native_value(self):
-        items = self._collect_invoices()
-        if not items:
-            return None
-        return float(f"{items[0]['amount']:.2f}")
+    def extra_state_attributes(self) -> dict[str, Any]:
+        pd = self._place_data()
+        attrs = self._base_attrs()
+
+        if self._sensor_key == "summary":
+            # Include contract details
+            ca_num = pd.get("contract_account_number") or pd.get("contract_account")
+            inst_num = pd.get("installation_number")
+            if ca_num:
+                attrs["numar_contract"] = ca_num
+            if inst_num:
+                attrs["numar_instalatie"] = inst_num
+
+        elif self._sensor_key == "address":
+            # Include structured address fields from raw place
+            raw_addr = self._place.get("address") or {}
+            if isinstance(raw_addr, dict):
+                for field in ("street", "number", "floor", "apartment", "city", "district", "postcode"):
+                    val = raw_addr.get(field)
+                    if val:
+                        attrs[field] = val
+
+        elif self._sensor_key == "contract":
+            # Include greenbill / email info if available
+            raw_contract = self._place.get("contract_account") or {}
+            if isinstance(raw_contract, dict):
+                for field in ("greenbill_email", "has_greenbill", "greenbill_status"):
+                    val = raw_contract.get(field)
+                    if val is not None:
+                        attrs[field] = val
+
+        return attrs
+
+
+# ---------------------------------------------------------------------------
+# Extended place sensors (index, unpaid, archive, history)
+# ---------------------------------------------------------------------------
+
+class EngiePlaceDataSensor(EngiePlaceEntity):
+    def __init__(
+        self,
+        coordinator: EngieDataCoordinator,
+        entry: ConfigEntry,
+        place: Mapping[str, Any],
+        index: int,
+        sensor_key: str,
+        name: str,
+        icon: str,
+    ) -> None:
+        super().__init__(coordinator, entry, place, index)
+        self._sensor_key = sensor_key
+        self._attr_unique_id = f"{entry.entry_id}_place_{self._poc}_{sensor_key}"
+        self._attr_name = name
+        self._attr_icon = icon
 
     @property
-    def extra_state_attributes(self):
-        attrs = {}
-        items = self._collect_invoices()
-        if not items:
-            return attrs
+    def native_value(self) -> Any:
+        pd = self._place_data()
 
-        # Agregare pe lună, ultimele 12 luni
-        by_month = {}
-        for it in items[:240]:
+        if self._sensor_key == "current_index_window":
+            info = pd.get("index_info") or {}
+            return "Da" if info.get("permite_index") or info.get("autocit") else "Nu"
+
+        if self._sensor_key == "unpaid_total":
+            unpaid = pd.get("unpaid_total")
             try:
-                y = int(it["date"][0:4])
-                m = int(it["date"][5:7])
+                return float(unpaid) if unpaid is not None else 0.0
             except Exception:
-                continue
-            by_month[(y, m)] = by_month.get((y, m), 0.0) + it["amount"]
+                return unpaid
 
-        keys = sorted(by_month.keys(), key=lambda t: (t[0], t[1]), reverse=True)[:12]
-        luni = [
-            "ianuarie",
-            "februarie",
-            "martie",
-            "aprilie",
-            "mai",
-            "iunie",
-            "iulie",
-            "august",
-            "septembrie",
-            "octombrie",
-            "noiembrie",
-            "decembrie",
-        ]
+        if self._sensor_key == "invoice_archive_count":
+            # Use consumption_count (number of invoices fetched)
+            return pd.get("consumption_count") or 0
 
-        def fmt(x):
-            return f"{x:.2f}".replace(".", ",") + " lei"
+        if self._sensor_key == "index_history_last":
+            return pd.get("index_history_last")
 
-        total = 0.0
-        for y, m in keys:
-            val = by_month[(y, m)]
-            attrs[luni[m - 1]] = fmt(val)
-            total += val
+        return None
 
-        attrs["──────────"] = ""
-        # numărul de facturi efective în lunile selectate
-        sel = set(keys)
-        cnt = 0
-        for it in items:
-            try:
-                k = (int(it["date"][0:4]), int(it["date"][5:7]))
-                if k in sel:
-                    cnt += 1
-            except Exception:
-                pass
-        attrs["Plăți efectuate"] = str(cnt)
-        attrs["Total suma achitată"] = fmt(total)
-        attrs["attribution"] = ATTRIBUTION
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        pd = self._place_data()
+        attrs = self._base_attrs()
+
+        if self._sensor_key == "current_index_window":
+            info = pd.get("index_info") or {}
+            # Clean, relevant fields only
+            if info.get("autocit") is not None:
+                attrs["autocit"] = info["autocit"]
+            if info.get("permite_index") is not None:
+                attrs["permite_index"] = info["permite_index"]
+            if info.get("last_index") is not None:
+                attrs["ultimul_index"] = info["last_index"]
+            if info.get("start_date"):
+                attrs["start_citire"] = info["start_date"]
+            if info.get("end_date"):
+                attrs["end_citire"] = info["end_date"]
+
+        elif self._sensor_key == "unpaid_total":
+            items = pd.get("unpaid_items") or []
+            if items:
+                # Simplified: only invoice_number, due_date, unpaid per item
+                attrs["facturi_restante"] = [
+                    {
+                        "numar_factura": it.get("invoice_number"),
+                        "scadenta": it.get("due_date"),
+                        "restant": it.get("unpaid"),
+                        "total": it.get("total"),
+                    }
+                    for it in items
+                ]
+            else:
+                attrs["facturi_restante"] = []
+
+        elif self._sensor_key == "invoice_archive_count":
+            # Clean "luna: suma" dict — newest first
+            by_month = pd.get("consumption_by_month") or {}
+            attrs.update(by_month)
+            total = pd.get("consumption_total")
+            if total is not None:
+                attrs["total_suma_achitata"] = f"{total:.2f} lei".replace(".", ",")
+            platite = pd.get("consumption_count")
+            if platite is not None:
+                attrs["plati_efectuate"] = platite
+
+        elif self._sensor_key == "index_history_last":
+            # Clean "luna an: index" dict — newest first
+            by_month = pd.get("index_history_by_month") or {}
+            attrs.update(by_month)
+
         return attrs
