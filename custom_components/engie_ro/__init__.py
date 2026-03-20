@@ -13,6 +13,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     coord = EngieDataCoordinator(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coord
     await coord.async_config_entry_first_refresh()
+
+    profile = (coord.data or {}).get("profile") or {}
+    email = (profile.get("email") or entry.data.get("username") or "").strip()
+    if email:
+        desired_title = f"Engie România - {email}"
+        if entry.title != desired_title:
+            hass.config_entries.async_update_entry(entry, title=desired_title)
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
