@@ -47,7 +47,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            auth_mode = user_input.get(CONF_AUTH_MODE) or AUTH_MODE_MOBILE
             username = (user_input.get(CONF_USERNAME) or "").strip().lower()
             token_file = (user_input.get(CONF_TOKEN_FILE) or "").strip()
 
