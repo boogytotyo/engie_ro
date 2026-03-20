@@ -29,7 +29,8 @@ def _unique_token_file(username: str = "") -> str:
     """Return a unique token file path. Always guaranteed to be unique."""
     if username:
         safe = (
-            username.strip().lower()
+            username.strip()
+            .lower()
             .replace("@", "_at_")
             .replace(".", "_")
             .replace("+", "_")
@@ -63,10 +64,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_DEVICE_ID] = (
                 user_input.get(CONF_DEVICE_ID) or "ha-" + uuid.uuid4().hex[:12]
             )
-            title = (
-                f"Engie România ({username})" if username
-                else "Engie România (bearer)"
-            )
+            title = f"Engie România ({username})" if username else "Engie România (bearer)"
             return self.async_create_entry(title=title, data=user_input)
 
         schema = vol.Schema(

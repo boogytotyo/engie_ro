@@ -12,10 +12,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import ATTRIBUTION, DOMAIN
 from .coordinator import EngieDataCoordinator
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _extract_places(raw: Any) -> list[dict[str, Any]]:
     """Return only real consumption places (those with a poc_number)."""
@@ -113,9 +113,8 @@ def _place_division(place: Mapping[str, Any]) -> str | None:
 # Setup
 # ---------------------------------------------------------------------------
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
-) -> None:
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
     coordinator: EngieDataCoordinator = hass.data[DOMAIN][entry.entry_id]
     data = coordinator.data or {}
     places = _extract_places(data.get("places"))
@@ -127,48 +126,79 @@ async def async_setup_entry(
 
     for idx, place in enumerate(places):
         # 3 senzori de bază pentru orice loc de consum
-        entities.extend([
-            EngiePlaceSensor(
-                coordinator, entry, place, idx, "summary",
-                "Engie – Rezumat", "mdi:home-city-outline",
-            ),
-            EngiePlaceSensor(
-                coordinator, entry, place, idx, "address",
-                "Engie – Adresă", "mdi:map-marker",
-            ),
-            EngiePlaceSensor(
-                coordinator, entry, place, idx, "contract",
-                "Engie – Contract", "mdi:file-document-outline",
-            ),
-        ])
+        entities.extend(
+            [
+                EngiePlaceSensor(
+                    coordinator,
+                    entry,
+                    place,
+                    idx,
+                    "summary",
+                    "Engie – Rezumat",
+                    "mdi:home-city-outline",
+                ),
+                EngiePlaceSensor(
+                    coordinator,
+                    entry,
+                    place,
+                    idx,
+                    "address",
+                    "Engie – Adresă",
+                    "mdi:map-marker",
+                ),
+                EngiePlaceSensor(
+                    coordinator,
+                    entry,
+                    place,
+                    idx,
+                    "contract",
+                    "Engie – Contract",
+                    "mdi:file-document-outline",
+                ),
+            ]
+        )
 
         # 4 senzori suplimentari — pentru TOATE locurile
-        entities.extend([
-            EngiePlaceDataSensor(
-                coordinator, entry, place, idx,
-                "current_index_window",
-                "Engie – Index curent",
-                "mdi:counter",
-            ),
-            EngiePlaceDataSensor(
-                coordinator, entry, place, idx,
-                "unpaid_total",
-                "Engie – Valoare factură restantă",
-                "mdi:file-document-alert-outline",
-            ),
-            EngiePlaceDataSensor(
-                coordinator, entry, place, idx,
-                "invoice_archive_count",
-                "Engie – Arhivă facturi",
-                "mdi:cash-register",
-            ),
-            EngiePlaceDataSensor(
-                coordinator, entry, place, idx,
-                "index_history_last",
-                "Engie – Ultimul index din istoric",
-                "mdi:history",
-            ),
-        ])
+        entities.extend(
+            [
+                EngiePlaceDataSensor(
+                    coordinator,
+                    entry,
+                    place,
+                    idx,
+                    "current_index_window",
+                    "Engie – Index curent",
+                    "mdi:counter",
+                ),
+                EngiePlaceDataSensor(
+                    coordinator,
+                    entry,
+                    place,
+                    idx,
+                    "unpaid_total",
+                    "Engie – Valoare factură restantă",
+                    "mdi:file-document-alert-outline",
+                ),
+                EngiePlaceDataSensor(
+                    coordinator,
+                    entry,
+                    place,
+                    idx,
+                    "invoice_archive_count",
+                    "Engie – Arhivă facturi",
+                    "mdi:cash-register",
+                ),
+                EngiePlaceDataSensor(
+                    coordinator,
+                    entry,
+                    place,
+                    idx,
+                    "index_history_last",
+                    "Engie – Ultimul index din istoric",
+                    "mdi:history",
+                ),
+            ]
+        )
 
     async_add_entities(entities, True)
 
@@ -176,6 +206,7 @@ async def async_setup_entry(
 # ---------------------------------------------------------------------------
 # Base entity
 # ---------------------------------------------------------------------------
+
 
 class EngieBaseEntity(CoordinatorEntity[EngieDataCoordinator], SensorEntity):
     def __init__(self, coordinator: EngieDataCoordinator, entry: ConfigEntry) -> None:
@@ -201,6 +232,7 @@ class EngieBaseEntity(CoordinatorEntity[EngieDataCoordinator], SensorEntity):
 # ---------------------------------------------------------------------------
 # Account-level sensors
 # ---------------------------------------------------------------------------
+
 
 class EngieAccountSensor(EngieBaseEntity):
     def __init__(
@@ -257,6 +289,7 @@ class EngieAccountSensor(EngieBaseEntity):
 # Place entity base
 # ---------------------------------------------------------------------------
 
+
 class EngiePlaceEntity(EngieBaseEntity):
     def __init__(
         self,
@@ -297,7 +330,11 @@ class EngiePlaceEntity(EngieBaseEntity):
         address = pd.get("address") or self._address
         if address:
             attrs["adresa"] = address
-        contract = pd.get("contract_account_number") or pd.get("contract_account") or _place_contract(self._place)
+        contract = (
+            pd.get("contract_account_number")
+            or pd.get("contract_account")
+            or _place_contract(self._place)
+        )
         if contract:
             attrs["cont_contract"] = contract
         division = pd.get("division") or _place_division(self._place)
@@ -312,6 +349,7 @@ class EngiePlaceEntity(EngieBaseEntity):
 # ---------------------------------------------------------------------------
 # Basic place sensors (address, contract, summary)
 # ---------------------------------------------------------------------------
+
 
 class EngiePlaceSensor(EngiePlaceEntity):
     def __init__(
@@ -364,7 +402,15 @@ class EngiePlaceSensor(EngiePlaceEntity):
             # Include structured address fields from raw place
             raw_addr = self._place.get("address") or {}
             if isinstance(raw_addr, dict):
-                for field in ("street", "number", "floor", "apartment", "city", "district", "postcode"):
+                for field in (
+                    "street",
+                    "number",
+                    "floor",
+                    "apartment",
+                    "city",
+                    "district",
+                    "postcode",
+                ):
                     val = raw_addr.get(field)
                     if val:
                         attrs[field] = val
@@ -384,6 +430,7 @@ class EngiePlaceSensor(EngiePlaceEntity):
 # ---------------------------------------------------------------------------
 # Extended place sensors (index, unpaid, archive, history)
 # ---------------------------------------------------------------------------
+
 
 class EngiePlaceDataSensor(EngiePlaceEntity):
     def __init__(

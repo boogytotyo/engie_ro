@@ -29,14 +29,26 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 _RO_MONTHS = [
-    "", "ianuarie", "februarie", "martie", "aprilie", "mai", "iunie",
-    "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie",
+    "",
+    "ianuarie",
+    "februarie",
+    "martie",
+    "aprilie",
+    "mai",
+    "iunie",
+    "iulie",
+    "august",
+    "septembrie",
+    "octombrie",
+    "noiembrie",
+    "decembrie",
 ]
 
 
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
+
 
 def _fmt_money_lei(value: float | int | str | None) -> str:
     try:
@@ -61,6 +73,7 @@ def _fmt_date_ro(iso_date: str) -> str:
 # ---------------------------------------------------------------------------
 # Walking / extraction helpers
 # ---------------------------------------------------------------------------
+
 
 def _walk(d):
     if isinstance(d, dict):
@@ -122,6 +135,7 @@ def _parse_address(*payloads: Any):
 
 def _extract_places_from_raw(places_raw: Any) -> list[dict]:
     """Return all distinct consumption places (keyed by poc_number)."""
+
     def _walk_nodes(node: Any):
         if isinstance(node, dict):
             yield node
@@ -150,6 +164,7 @@ def _extract_places_from_raw(places_raw: Any) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Per-place data fetcher
 # ---------------------------------------------------------------------------
+
 
 async def _fetch_place_data(
     client: EngieClient,
@@ -278,12 +293,14 @@ async def _fetch_place_data(
                                 upf = 0.0
                             if upf > 0:
                                 unpaid_total += upf
-                                unpaid_items.append({
-                                    "invoice_number": inv.get("invoice_number"),
-                                    "unpaid": inv.get("unpaid"),
-                                    "due_date": inv.get("due_date"),
-                                    "total": inv.get("total"),
-                                })
+                                unpaid_items.append(
+                                    {
+                                        "invoice_number": inv.get("invoice_number"),
+                                        "unpaid": inv.get("unpaid"),
+                                        "due_date": inv.get("due_date"),
+                                        "total": inv.get("total"),
+                                    }
+                                )
             except Exception as e:
                 _LOGGER.debug("Parse invoices unpaid failed for %s: %s", poc_number, e)
             if isinstance(d, dict):
@@ -343,14 +360,16 @@ async def _fetch_place_data(
                     invs2 = m.get("invoice_numbers") or []
                     for it in invs2:
                         if isinstance(it, dict):
-                            invoices_flat.append({
-                                "month": m.get("invoiced_at"),
-                                "invoice_number": it.get("invoice_number"),
-                                "division": it.get("division"),
-                                "invoiced_at": it.get("invoiced_at"),
-                                "consum_gaz": it.get("consum_gaz"),
-                                "consum_elec": it.get("consum_elec"),
-                            })
+                            invoices_flat.append(
+                                {
+                                    "month": m.get("invoiced_at"),
+                                    "invoice_number": it.get("invoice_number"),
+                                    "division": it.get("division"),
+                                    "invoiced_at": it.get("invoiced_at"),
+                                    "consum_gaz": it.get("consum_gaz"),
+                                    "consum_elec": it.get("consum_elec"),
+                                }
+                            )
     except Exception as e:
         _LOGGER.debug("Invoices flat parse failed for %s: %s", poc_number, e)
 
@@ -386,9 +405,7 @@ async def _fetch_place_data(
                     invs3 = month_item.get("invoice_numbers") or []
                     for inv in invs3:
                         d = str(inv.get("invoiced_at") or month_item.get("invoiced_at") or "")
-                        amount = (
-                            inv.get("consum_gaz") or inv.get("value") or inv.get("amount") or 0
-                        )
+                        amount = inv.get("consum_gaz") or inv.get("value") or inv.get("amount") or 0
                         try:
                             amount_num = float(str(amount).replace(",", "."))
                         except Exception:
@@ -478,6 +495,7 @@ async def _fetch_place_data(
 # ---------------------------------------------------------------------------
 # Coordinator
 # ---------------------------------------------------------------------------
+
 
 class EngieDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
