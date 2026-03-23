@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T03:25:45.413Z",
+  "generated_at": "2026-03-23T09:09:58.421Z",
   "top": [
     {
       "tag": "2.0.4",
@@ -88,28 +88,12 @@
       ]
     },
     {
-      "tag": "2.1.0",
-      "name": "v2.1.0 – Suport multi-cont și locuri de consum multiple",
+      "tag": "2.1.1",
+      "name": "2.1.1 - Fix sensor.engie_index_curent value",
       "prerelease": false,
-      "published_at": "2026-03-20T21:27:24Z",
+      "published_at": "2026-03-23T09:09:51Z",
       "downloads": 0,
-      "assets": [
-        {
-          "name": "engie_ro-2.1.0.zip",
-          "download_count": 0,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.0/engie_ro-2.1.0.zip"
-        },
-        {
-          "name": "engie_ro-2.1.0.zip.sha256",
-          "download_count": 0,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.0/engie_ro-2.1.0.zip.sha256"
-        },
-        {
-          "name": "engie_ro.zip",
-          "download_count": 0,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.0/engie_ro.zip"
-        }
-      ]
+      "assets": []
     }
   ]
 }
