@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T09:09:58.421Z",
+  "generated_at": "2026-03-23T13:02:22.763Z",
   "top": [
     {
       "tag": "2.0.4",
@@ -88,12 +88,28 @@
       ]
     },
     {
-      "tag": "2.1.1",
-      "name": "2.1.1 - Fix sensor.engie_index_curent value",
+      "tag": "2.1.2",
+      "name": "v2.1.2 - fix auth.py",
       "prerelease": false,
-      "published_at": "2026-03-23T09:09:51Z",
+      "published_at": "2026-03-23T13:02:13Z",
       "downloads": 0,
-      "assets": []
+      "assets": [
+        {
+          "name": "engie_ro-2.1.2.zip",
+          "download_count": 0,
+          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro-2.1.2.zip"
+        },
+        {
+          "name": "engie_ro-2.1.2.zip.sha256",
+          "download_count": 0,
+          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro-2.1.2.zip.sha256"
+        },
+        {
+          "name": "engie_ro.zip",
+          "download_count": 0,
+          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro.zip"
+        }
+      ]
     }
   ]
 }
