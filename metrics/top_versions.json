@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-26T03:29:25.336Z",
+  "generated_at": "2026-03-27T03:31:45.695Z",
   "top": [
     {
       "tag": "2.0.4",
@@ -50,6 +50,30 @@
       ]
     },
     {
+      "tag": "2.1.2",
+      "name": "v2.1.2 - fix auth.py",
+      "prerelease": false,
+      "published_at": "2026-03-23T13:02:13Z",
+      "downloads": 4,
+      "assets": [
+        {
+          "name": "engie_ro-2.1.2.zip",
+          "download_count": 0,
+          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro-2.1.2.zip"
+        },
+        {
+          "name": "engie_ro-2.1.2.zip.sha256",
+          "download_count": 0,
+          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro-2.1.2.zip.sha256"
+        },
+        {
+          "name": "engie_ro.zip",
+          "download_count": 4,
+          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro.zip"
+        }
+      ]
+    },
+    {
       "tag": "2.0.3",
       "name": "2.0.3",
       "prerelease": false,
@@ -84,30 +108,6 @@
           "name": "engie_ro-2.0.1.zip",
           "download_count": 3,
           "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/v2.0.1/engie_ro-2.0.1.zip"
-        }
-      ]
-    },
-    {
-      "tag": "2.1.2",
-      "name": "v2.1.2 - fix auth.py",
-      "prerelease": false,
-      "published_at": "2026-03-23T13:02:13Z",
-      "downloads": 1,
-      "assets": [
-        {
-          "name": "engie_ro-2.1.2.zip",
-          "download_count": 0,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro-2.1.2.zip"
-        },
-        {
-          "name": "engie_ro-2.1.2.zip.sha256",
-          "download_count": 0,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro-2.1.2.zip.sha256"
-        },
-        {
-          "name": "engie_ro.zip",
-          "download_count": 1,
-          "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro.zip"
         }
       ]
     }
