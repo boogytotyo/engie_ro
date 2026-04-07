@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-06T03:43:45.147Z",
+  "generated_at": "2026-04-07T03:33:06.841Z",
   "top": [
     {
       "tag": "2.0.4",
@@ -30,7 +30,7 @@
       "name": "v2.1.2 - fix auth.py",
       "prerelease": false,
       "published_at": "2026-03-23T13:02:13Z",
-      "downloads": 34,
+      "downloads": 35,
       "assets": [
         {
           "name": "engie_ro-2.1.2.zip",
@@ -44,7 +44,7 @@
         },
         {
           "name": "engie_ro.zip",
-          "download_count": 31,
+          "download_count": 32,
           "browser_download_url": "https://github.com/boogytotyo/engie_ro/releases/download/2.1.2/engie_ro.zip"
         }
       ]
