@@ -1,6 +1,6 @@
 # Top 5 Versiuni după Downloads
 
-Ultima generare: 2026-05-30T04:29:57.280Z
+Ultima generare: 2026-05-31T04:56:00.480Z
 
 | # | Versiune | Downloads | Publicat |
 | - | - | -: | - |
@@ -8,4 +8,4 @@ Ultima generare: 2026-05-30T04:29:57.280Z
 | 2 | 2.1.2 | 36 | 2026-03-23 |
 | 3 | v2.0.2 | 6 | 2025-08-27 |
 | 4 | 2.0.3 | 5 | 2025-09-03 |
-| 5 | v2.0.1 | 3 | 2025-08-27 |
+| 5 | v2.0.1 | 5 | 2025-08-27 |
