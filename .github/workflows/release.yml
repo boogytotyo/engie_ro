@@ -30,7 +30,7 @@ jobs:
           sha256sum "build/engie_ro-${TAG}.zip" > "build/engie_ro-${TAG}.zip.sha256"
 
       - name: 🏷️ Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             build/engie_ro-${{ github.ref_name }}.zip
